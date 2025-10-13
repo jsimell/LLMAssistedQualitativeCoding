@@ -2,6 +2,7 @@ import { useContext, useState, useRef } from "react";
 import { FolderArrowDownIcon, ArrowsRightLeftIcon, ArrowRightIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { WorkflowContext } from "../../context/WorkflowContext";
 import Button from "../Button";
+import StepNavigationButtons from "../StepNavigationButtons";
 
 const DataUploadCardContent = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -9,11 +10,6 @@ const DataUploadCardContent = () => {
   const { currentStep, setCurrentStep, fileInfo, setFileInfo, setRawData, proceedAvailable, setProceedAvailable } = useContext(WorkflowContext);
   const BrowseButtonIcon = fileInfo ? ArrowsRightLeftIcon : FolderArrowDownIcon;
   const browseButtonLabel = fileInfo ? "Change file" : "Browse files";
-
-  // if there is a file uploaded already (i.e. user has returned to this step afterwards)
-  if (fileInfo) {
-    setProceedAvailable(true);
-  }
 
   const handleBrowseButtonClick = () => {
     fileInputRef.current?.click();
@@ -57,9 +53,7 @@ const DataUploadCardContent = () => {
         </div>
       )}
       <Button label={browseButtonLabel} onClick={handleBrowseButtonClick} icon={BrowseButtonIcon} iconPosition="start" variant="tertiary"></Button>
-      <div className="flex w-full h-full items-end justify-end">
-        <Button label="Next step" icon={ArrowRightIcon} onClick={() => setCurrentStep(currentStep + 1)} variant={proceedAvailable ? "primary" : "disabled"}></Button>
-      </div>
+      <StepNavigationButtons hidePrev={true}></StepNavigationButtons>
     </div>
   );
 }

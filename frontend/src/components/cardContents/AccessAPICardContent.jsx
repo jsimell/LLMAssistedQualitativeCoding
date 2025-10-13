@@ -3,60 +3,107 @@ import { WorkflowContext } from "../../context/WorkflowContext";
 import { ExclamationTriangleIcon, ArrowRightIcon, ArrowLeftIcon, InformationCircleIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import Button from "../Button";
 import InfoBox from "../InfoBox";
+import StepNavigationButtons from "../StepNavigationButtons";
 
 const AccessAPICardContent = () => {
   const [currentInput, setCurrentInput] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isValid, setIsValid] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
   const { apiKey, setApiKey, proceedAvailable, setProceedAvailable, currentStep, setCurrentStep } = useContext(WorkflowContext);
   const formRef = useRef(null);
+  const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL
 
-  // Set proceed button disabled until a valid api key is entered
-  setProceedAvailable(false);
+  const validateApiKey = async (apiKey) => {
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/validate_api_key`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ openai_api_key: apiKey }),
+      });
 
-  const handleSubmit = () => {
+      if (!response.ok) {
+        switch (response.status) {
+          case 401:
+            return { ok: false, error: "invalid_key" };
+          case 500:
+            return { ok: false, error: "internal_server_error" };
+          case 502:
+            return { ok: false, error: "openai_error" };
+          default:
+            return { ok: false, error: "unknown_server_error" };
+        }
+      }
+
+      const data = await response.json();
+      return { ok: data.valid, error: data.valid ? null : "invalid_key" };
+    } catch (e) {
+      console.error("Network or unexpected error:", e);
+      return { ok: false, error: "network_error" };
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault(); // Safe guard
     setIsValidating(true);
     setIsSubmitted(true);
     setIsValid(false);
-    if (currentInput) {
-      // TODO: check validity of the key in backend
+    setApiKey(null);
 
-      // if valid
-      setIsValid(true); // for testing
+    const validationResult = await validateApiKey(currentInput);
+
+    if (validationResult.ok) {
+      setIsValid(true);
+      setProceedAvailable(true);
       setApiKey(currentInput);
-      console.log("Saved OpenAI API key to the context component.");
+    } else {
+      switch (validationResult.error) {
+        case "invalid_key":
+          setErrorMsg("Invalid API key");
+          break;
+        case "network_error":
+          setErrorMsg("Network error: could not validate key");
+          break;
+        case "internal_server_error":
+          setErrorMsg("Validation failed: Internal server error");
+          break;
+        case "openai_error":
+          setErrorMsg("Validation failed: OpenAI API error");
+          break;
+        default:
+          setErrorMsg("Validation failed: Unknown error");
+      }
     }
-  }
+
+    setIsValidating(false);
+  };
 
   return (
     <div className="flex flex-col w-full h-full items-center gap-4 pt-12 pb-6 px-6.5">
       <div className="flex items-center justify-between max-w-xl w-full gap-4">
         <form ref={formRef} onSubmit={handleSubmit} className="flex items-center gap-3 w-full">
-          <label for="apiKey" className="text-nowrap">OpenAI API key:</label>
+          <label htmlFor="apiKey" className="text-nowrap">OpenAI API key:</label>
           <input 
             id="apiKey" 
             type="text" 
-            onChange={(e) => setCurrentInput(e.value)}
+            onChange={(e) => setCurrentInput(e.target.value)}
             spellCheck="false" 
             className="border-1 w-full h-fit" 
           />
         </form>
-        <Button label="Submit" onClick={handleSubmit} variant="tertiary"></Button>
+        <Button label="Submit" onClick={handleSubmit} variant={isValidating ? "disabled" : "tertiary"}></Button>
       </div>
       {isSubmitted && isValidating && (
         <InfoBox msg="Validating API key..." icon={InformationCircleIcon} variant="neutral"></InfoBox>
       )}
       {isSubmitted && !isValidating && !isValid && (
-        <InfoBox msg="Invalid API key" icon={ExclamationTriangleIcon} variant="error"></InfoBox>
+        <InfoBox msg={errorMsg} icon={ExclamationTriangleIcon} variant="error"></InfoBox>
       )}
       {isSubmitted && !isValidating && isValid && (
-        <InfoBox msg="API key is valid" icon={CheckCircleIcon} variant="success"></InfoBox>
+        <InfoBox msg="API key is valid - you may proceed to the next step" icon={CheckCircleIcon} variant="success"></InfoBox>
       )}
-      <div className="flex w-full h-full items-end justify-between">
-        <Button label="Previous step" icon={ArrowLeftIcon} iconPosition="start" onClick={() => setCurrentStep(currentStep - 1)} variant="primary"></Button>
-        <Button label="Next step" icon={ArrowRightIcon} onClick={() => setCurrentStep(currentStep + 1)} variant={proceedAvailable ? "primary" : "disabled"}></Button>
-      </div>
+      <StepNavigationButtons></StepNavigationButtons>
     </div>
   );
 }

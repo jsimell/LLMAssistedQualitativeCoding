@@ -5,10 +5,10 @@ export const WorkflowContext = createContext();
 export function WorkflowProvider({ children }) {
 
   // Global states
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useState(null);
   const [researchQuestions, setResearchQuestions] = useState([]);
-  const [contextInfo, setContextInfo] = useState("");
-  const [fileInfo, setFileInfo] = useState("");    // Stores the name and size of the uploaded file
+  const [contextInfo, setContextInfo] = useState(null);
+  const [fileInfo, setFileInfo] = useState(null);    // Stores the name and size of the uploaded file
   const [rawData, setRawData] = useState("");           // Entire imported text
   const [codedData, setCodedData] = useState([]);       // Data with codes applied
   const [codebook, setCodebook] = useState([], []);         // Codes and their definitions
