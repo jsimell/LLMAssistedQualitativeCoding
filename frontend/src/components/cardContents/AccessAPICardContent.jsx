@@ -4,6 +4,7 @@ import { ExclamationTriangleIcon, ArrowRightIcon, ArrowLeftIcon, InformationCirc
 import Button from "../Button";
 import InfoBox from "../InfoBox";
 import StepNavigationButtons from "../StepNavigationButtons";
+import LoadingSymbol from "../LoadingSymbol";
 
 const AccessAPICardContent = () => {
   const [currentInput, setCurrentInput] = useState("");
@@ -63,7 +64,7 @@ const AccessAPICardContent = () => {
           setErrorMsg("Invalid API key");
           break;
         case "network_error":
-          setErrorMsg("Network error: could not validate key");
+          setErrorMsg("Network error: Could not validate key");
           break;
         case "internal_server_error":
           setErrorMsg("Validation failed: Internal server error");
@@ -95,13 +96,13 @@ const AccessAPICardContent = () => {
         <Button label="Submit" onClick={handleSubmit} variant={isValidating ? "disabled" : "tertiary"}></Button>
       </div>
       {isSubmitted && isValidating && (
-        <InfoBox msg="Validating API key..." icon={InformationCircleIcon} variant="neutral"></InfoBox>
+        <InfoBox msg="Validating API key..." variant="loading"></InfoBox>
       )}
       {isSubmitted && !isValidating && !isValid && (
         <InfoBox msg={errorMsg} icon={ExclamationTriangleIcon} variant="error"></InfoBox>
       )}
       {isSubmitted && !isValidating && isValid && (
-        <InfoBox msg="API key is valid - you may proceed to the next step" icon={CheckCircleIcon} variant="success"></InfoBox>
+        <InfoBox msg="API key is valid: You may proceed to the next step" icon={CheckCircleIcon} variant="success"></InfoBox>
       )}
       <StepNavigationButtons></StepNavigationButtons>
     </div>
