@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
-import llmcode_integration as llmcode
 
 # Create a FastAPI instance
 app = FastAPI()
