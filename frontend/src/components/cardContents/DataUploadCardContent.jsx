@@ -1,4 +1,4 @@
-import { useContext, useState, useRef } from "react";
+import { useContext, useState, useEffect, useRef } from "react";
 import { FolderArrowDownIcon, ArrowsRightLeftIcon, ArrowRightIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { WorkflowContext } from "../../context/WorkflowContext";
 import Button from "../Button";
@@ -7,9 +7,14 @@ import StepNavigationButtons from "../StepNavigationButtons";
 const DataUploadCardContent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
-  const { currentStep, setCurrentStep, fileInfo, setFileInfo, setRawData, proceedAvailable, setProceedAvailable } = useContext(WorkflowContext);
+  const { currentStep, fileInfo, setFileInfo, setRawData, setProceedAvailable } = useContext(WorkflowContext);
   const BrowseButtonIcon = fileInfo ? ArrowsRightLeftIcon : FolderArrowDownIcon;
   const browseButtonLabel = fileInfo ? "Change file" : "Browse files";
+
+  // Make sure next button is available if the user returns to this screen after uploading a file previously
+  useEffect(() => {
+    (fileInfo && currentStep === 1)  ? setProceedAvailable(true) : null;
+  }, [currentStep]);
 
   const handleBrowseButtonClick = () => {
     fileInputRef.current?.click();
