@@ -9,7 +9,7 @@ const Button = ({ label, onClick, icon: Icon, iconPosition="end", variant="prima
     <button 
       onClick={onClick}
       title={title}
-      className={`flex items-center justify-center w-fit h-fit text-base font-medium gap-2 px-3.5 py-2 rounded-xl ${variants[variant]}`}
+      className={`flex items-center justify-center w-fit h-fit text-base font-medium text-nowrap gap-2 px-3.5 py-2 rounded-xl ${variants[variant]}`}
     >
       {Icon && iconPosition === "start" && <Icon className="size-7" />}
       {label && <span>{label}</span>}
