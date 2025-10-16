@@ -3,9 +3,7 @@ import { WorkflowContext } from "../../context/WorkflowContext";
 
 const ExportCardContent = () => {
   return (
-    <div>
-      <StepNavigationButtons hideNext={true}></StepNavigationButtons>
-    </div>
+    <div></div>
   );
 }
 

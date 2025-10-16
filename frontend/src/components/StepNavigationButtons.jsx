@@ -17,7 +17,7 @@ const StepNavigationButtons = ({ hidePrev=false, hideNext=false }) => {
   }
 
   return (
-    <div className="flex w-full">
+    <>
       {!hidePrev && 
         <div className="flex flex-1 justify-start">
           <Button 
@@ -39,7 +39,7 @@ const StepNavigationButtons = ({ hidePrev=false, hideNext=false }) => {
           ></Button>
         </div>
       }
-    </div>
+    </>
   )
 }
 

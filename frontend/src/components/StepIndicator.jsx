@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { WorkflowContext } from "../context/WorkflowContext";
 
-const StepIndicator = ({ label, idx}) => {
+const StepIndicator = ({ label, idx }) => {
   const { currentStep, setCurrentStep } = useContext(WorkflowContext);
   const isClickable = idx < currentStep;
 
@@ -17,10 +17,7 @@ const StepIndicator = ({ label, idx}) => {
   return (
     <div 
       className={`flex gap-4 h-fit w-fit rounded-xl pr-2 items-center
-        ${isClickable 
-          ? "cursor-pointer hover:bg-primary/10 hover:text-primary"
-          : ""
-        }
+        ${isClickable ? "cursor-pointer hover:bg-primary/10 hover:text-primary" : ""}
       `}
       onClick={handleClick}
     >
