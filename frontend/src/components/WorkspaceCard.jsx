@@ -9,7 +9,7 @@ const WorkspaceCard = ({ title, children }) => {
   return (
     <div className="flex flex-col h-full w-full border-2 rounded-3xl border-outline">
       <WorkspaceCardHeader title={title}></WorkspaceCardHeader>
-      <div className="flex flex-col flex-1 px-13 py-14 items-center bg-background text-onBackground text-base rounded-b-3xl">
+      <div className="flex flex-col flex-1 px-12 py-12 items-center bg-background text-onBackground text-base rounded-b-3xl">
         {children}
       </div>
       <div className="flex-1 flex items-end pb-7 px-7 gap-7">
