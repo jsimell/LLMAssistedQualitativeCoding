@@ -42,7 +42,7 @@ const ResearchQuestionsCardContent = () => {
           />
         </div>
         <div className="flex flex-col">
-          <label for="contextInfo">Contextual information:</label>
+          <label htmlFor="contextInfo">Contextual information:</label>
           <textarea
             id="contextInfo"
             value={currentContextInfo} 
