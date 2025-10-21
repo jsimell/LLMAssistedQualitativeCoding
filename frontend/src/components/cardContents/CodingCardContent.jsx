@@ -162,7 +162,7 @@ const CodingCardContent = () => {
     });
   };
 
-  const renderCodeBlob = (codeId) => {
+  const renderCodeBlob = (codeId, hasTrailingBreak) => {
     const codeObject = codes.find((c) => c.id === codeId);
     if (!codeObject) return null;
     return (
@@ -180,6 +180,7 @@ const CodingCardContent = () => {
           ref={activeCodeId === codeId ? activeCodeRef : null} // attach ref only to active code
           className="bg-tertiaryContainer border border-gray-500 rounded-full px-2 mr-1.5 mt-1 hover:bg-tertiaryContainerHover focus:bg-tertiaryContainerHover focus:outline-none focus:ring-1 focus:ring-onBackground"
         />
+        {hasTrailingBreak && <br/>}
       </span>
     );
   }; 
@@ -191,6 +192,9 @@ const CodingCardContent = () => {
   }
 
   const renderPassage = (p) => {
+    // If the passage ends with a line break, a line break should be added after the last code blob
+    const endsWithLineBreak = p.text.endsWith("\n");
+
     return (
       <React.Fragment key={p.position}>
         <span
@@ -202,7 +206,7 @@ const CodingCardContent = () => {
           {p.text}
         </span>
         {p.codeIds?.length > 0 && p.codeIds.map((codeId) => {
-          return renderCodeBlob(codeId);
+          return renderCodeBlob(codeId, endsWithLineBreak);
         })}
       </React.Fragment>
     );
