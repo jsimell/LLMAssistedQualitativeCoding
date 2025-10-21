@@ -11,7 +11,7 @@ export function WorkflowProvider({ children }) {
   const [fileInfo, setFileInfo] = useState(null);    // Stores the name and size of the uploaded file
   const [rawData, setRawData] = useState("");           // Entire imported text
   const [codedData, setCodedData] = useState([]);       // Data with codes applied
-  const [codebook, setCodebook] = useState([], []);         // Codes and their definitions
+  const [codebook, setCodebook] = useState([[], []]);         // Codes and their definitions
   const [aiSuggestionsEnabled, setAiSuggestionsEnabled] = useState(true); // Global toggle
   const [currentStep, setCurrentStep] = useState(1);    // The current step of the workflow
   const [proceedAvailable, setProceedAvailable] = useState(false);  // Defines whether or not user can currently proceed to the next step
