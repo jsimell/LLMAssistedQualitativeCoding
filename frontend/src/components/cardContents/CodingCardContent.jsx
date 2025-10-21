@@ -94,13 +94,14 @@ const CodingCardContent = () => {
   };
 
   const handleKeyDown = (e) => {
-    e.preventDefault();
     if (["Enter", "Tab", "Escape"].includes(e.key)) {
+      e.preventDefault();  // Prevents default behaviour of the tab button
       e.target.blur();
       setActiveCodeId(null);
       return;
     } 
     if (e.key === "Delete") {
+      e.preventDefault();
       deleteCode(activeCodeId);
     }
   }
