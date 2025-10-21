@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useRef } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import { WorkflowContext } from "../../context/WorkflowContext";
 
 const CodingCardContent = () => {
@@ -190,23 +190,29 @@ const CodingCardContent = () => {
     target.style.width = `${target.scrollWidth + 4}px`;
   }
 
+  const renderPassage = (p) => {
+    return (
+      <React.Fragment key={p.position}>
+        <span
+          key={p.position}
+          id={p.position}
+          onClick={() => setActiveCodeId(p.codeIds[0])}
+          className={p.codeIds?.length > 0 ? "bg-tertiaryContainer hover:bg-tertiaryContainerHover cursor-pointer rounded-sm px-1 w-fit mr-1" : ""}
+        >
+          {p.text}
+        </span>
+        {p.codeIds?.length > 0 && p.codeIds.map((codeId) => {
+          return renderCodeBlob(codeId);
+        })}
+      </React.Fragment>
+    );
+  }
+
   return (
     <div className="flex w-full gap-7">
       <div onMouseUp={handleMouseUp} className="flex-1 rounded-xl border-1 border-outline p-8 text-onBackground text-base whitespace-pre-wrap">
         {passages.map((p) => (
-          <>
-            <span
-              key={p.position}
-              id={p.position}
-              onClick={() => setActiveCodeId(p.codeIds[0])}
-              className={p.codeIds?.length > 0 ? "bg-tertiaryContainer hover:bg-tertiaryContainerHover cursor-pointer rounded-sm px-1 w-fit mr-1" : ""}
-            >
-              {p.text}
-            </span>
-            {p.codeIds?.length > 0 && p.codeIds.map((codeId) => {
-              return renderCodeBlob(codeId);
-            })}
-          </>
+          renderPassage(p)
         ))}
       </div>
       <div className="flex flex-col items-center w-fit h-fit min-w-60 sticky top-5 rounded-xl border-1 border-outline">
