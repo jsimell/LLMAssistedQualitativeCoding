@@ -3,52 +3,21 @@ import { WorkflowContext } from "../../context/WorkflowContext";
 import { ExclamationTriangleIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Button from "../Button";
 import InfoBox from "../InfoBox";
-import StepNavigationButtons from "../StepNavigationButtons";
-import LoadingSymbol from "../LoadingSymbol";
+import { validateApiKey } from "../../services/validateApiKey";
 
 const AccessAPICardContent = () => {
-  const [currentInput, setCurrentInput] = useState("");
+  const [currentInput, setCurrentInput] = useState("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");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isValid, setIsValid] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
-  const { apiKey, setApiKey, proceedAvailable, setProceedAvailable, currentStep, setCurrentStep } = useContext(WorkflowContext);
+  const { apiKey, setApiKey, setProceedAvailable, currentStep } = useContext(WorkflowContext);
   const formRef = useRef(null);
-  const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL
 
   // Make sure the next step button is available if the user returns to this screen after validating a key previously
   useEffect(() => {
     (apiKey && currentStep === 2)  ? setProceedAvailable(true) : null;
   }, [currentStep]);
-
-  const validateApiKey = async (apiKey) => {
-    try {
-      const response = await fetch(`${BACKEND_BASE_URL}/api/validate_api_key`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ openai_api_key: apiKey }),
-      });
-
-      if (!response.ok) {
-        switch (response.status) {
-          case 401:
-            return { ok: false, error: "invalid_key" };
-          case 500:
-            return { ok: false, error: "internal_server_error" };
-          case 502:
-            return { ok: false, error: "openai_error" };
-          default:
-            return { ok: false, error: "unknown_server_error" };
-        }
-      }
-
-      const data = await response.json();
-      return { ok: data.valid, error: data.valid ? null : "invalid_key" };
-    } catch (e) {
-      console.error("Network or unexpected error:", e);
-      return { ok: false, error: "network_error" };
-    }
-  };
 
   const handleSubmit = async (e) => {
     e?.preventDefault(); // Safe guard
@@ -59,28 +28,13 @@ const AccessAPICardContent = () => {
 
     const validationResult = await validateApiKey(currentInput);
 
-    if (validationResult.ok) {
+    if (validationResult.valid) {
       setIsValid(true);
       setProceedAvailable(true);
       setApiKey(currentInput);
       setCurrentInput("");
     } else {
-      switch (validationResult.error) {
-        case "invalid_key":
-          setErrorMsg("Invalid API key");
-          break;
-        case "network_error":
-          setErrorMsg("Network error: Could not validate key");
-          break;
-        case "internal_server_error":
-          setErrorMsg("Validation failed: Internal server error");
-          break;
-        case "openai_error":
-          setErrorMsg("Validation failed: OpenAI API error");
-          break;
-        default:
-          setErrorMsg("Validation failed: Unknown error");
-      }
+      setErrorMsg(validationResult.error);
     }
 
     setIsValidating(false);
