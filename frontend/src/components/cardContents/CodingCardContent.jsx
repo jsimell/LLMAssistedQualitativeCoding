@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect, useRef } from "react";
 import { WorkflowContext } from "../../context/WorkflowContext";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { PencilSquareIcon } from "@heroicons/react/24/solid";
 
 const CodingCardContent = () => {
   const { passages, setPassages, codes, setCodes, setProceedAvailable } = useContext(WorkflowContext);
@@ -242,7 +243,10 @@ const CodingCardContent = () => {
       <div className="flex flex-col w-full gap-2 px-6 py-4">
         {[...uniqueCodes].map(code => (
           <div key={code} className="flex justify-between items-center gap-10">
-            <span>{code.trim()}</span>
+            <span className="flex items-center gap-1">
+              {code.trim()}
+              <PencilSquareIcon className="size-6 p-0.5 rounded-sm text-[#007a60] hover:bg-tertiary/10 cursor-pointer"/>
+            </span>
             <span>{`(${codes.filter(c => c.code.trim() === code.trim()).length})`}</span>
           </div>
         ))}
