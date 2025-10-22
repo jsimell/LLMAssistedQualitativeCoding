@@ -17,7 +17,47 @@ export interface FileInfo {
   name: string;
 }
 
-export const WorkflowContext = createContext<any>(null);
+type Setter<T> = React.Dispatch<React.SetStateAction<T>>;
+
+export const WorkflowContext = createContext<WorkflowContextType | undefined>(undefined);
+
+export interface WorkflowContextType {
+  apiKey: string;
+  setApiKey: Setter<string>;
+
+  researchQuestions: string;
+  setResearchQuestions: Setter<string>;
+
+  contextInfo: string;
+  setContextInfo: Setter<string>;
+
+  fileInfo: FileInfo | null;
+  setFileInfo: Setter<FileInfo | null>;
+
+  rawData: string;
+  setRawData: Setter<string>;
+
+  aiSuggestionsEnabled: boolean;
+  setAiSuggestionsEnabled: Setter<boolean>;
+
+  currentStep: number;
+  setCurrentStep: Setter<number>;
+
+  proceedAvailable: boolean;
+  setProceedAvailable: Setter<boolean>;
+
+  passages: Passage[];
+  setPassages: Setter<Passage[]>;
+
+  codes: Code[];
+  setCodes: Setter<Code[]>;
+
+  nextCodeId: number;
+  setNextCodeId: Setter<number>;
+
+  nextPassageId: number;
+  setNextPassageId: Setter<number>;
+}
 
 export function WorkflowProvider({ children }: { children: React.ReactNode }) {
 
@@ -32,15 +72,8 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   const [proceedAvailable, setProceedAvailable] = useState<boolean>(false);  // Defines whether or not user can currently proceed to the next step
   const [nextCodeId, setNextCodeId] = useState<number>(0);  // Next unique id for a new code
   const [nextPassageId, setNextPassageId] = useState<number>(0);   // Next unique id for a new passage
-
-  //// TODO: CHANGE THE STRUCTURE OF THE BELOW STATES ////
-  // The passages in the data coding phase. 
-  // Values should have form: { id: <string(uuidv4())>, order: <int>, text: <string>, codeIds: Array<int> }
-  const [passages, setPassages] = useState<Passage[]>([]);
-  // The codes are stored in the separate "codes" state as: {id: <int>, passageId: <string(uuidv4())>, code: <string>}
-  // NOTE: This is not like a codebook, which contains all codes only once.
-  // Instead, all inserted codes (even duplicates) are stored in this state with a unique id.
-  const [codes, setCodes] = useState<Code[]>([]);
+  const [passages, setPassages] = useState<Passage[]>([]);  // The passages of the data coding phase
+  const [codes, setCodes] = useState<Code[]>([]);  // The codes of the data coding phase
 
   // Set the raw data as the first passage once it is uploaded
   useEffect(() => {
