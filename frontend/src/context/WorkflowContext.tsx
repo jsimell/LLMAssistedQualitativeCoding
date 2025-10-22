@@ -1,19 +1,19 @@
 import React, { createContext, useState, useEffect } from "react";
 
-interface Passage {
+export interface Passage {
   uid: number;
   order: number;
   text: string;
   codeIds: number[];
 }
 
-interface Code {
+export interface Code {
   id: number;
   passageId: string;
   code: string;
 }
 
-interface FileInfo {
+export interface FileInfo {
   name: string;
 }
 
