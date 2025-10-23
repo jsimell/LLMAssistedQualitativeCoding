@@ -33,6 +33,16 @@ const CodingCardContent = () => {
     setProceedAvailable(true);
   }, []);
 
+  const passagesContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!passagesContainerRef.current) return;
+    const inputs: NodeListOf<HTMLInputElement> = passagesContainerRef.current.querySelectorAll("input");
+    inputs.forEach((input) => {
+      input.style.width = "1px";
+      input.style.width = `${input.scrollWidth + 4}px`;
+    });
+  }, []);
+
   // The purpose of the below is:
   // 1. ensure that the active code automatically gets focus when it is first created
   // 2. ensure that the codebook gets updated when activeCodeId changes (i.e., when user clicks on a code blob, or outside to defocus)
@@ -460,6 +470,7 @@ const CodingCardContent = () => {
       <div
         onMouseUp={handleHighlight}
         className="flex-1 rounded-xl border-1 border-outline p-8 text-onBackground text-base whitespace-pre-wrap"
+        ref={passagesContainerRef}
       >
         {passages.map((p) => renderPassage(p))}
       </div>
