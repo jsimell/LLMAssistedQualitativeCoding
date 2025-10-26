@@ -9,7 +9,7 @@ const Button = ({ label, onClick, icon: Icon, iconPosition="end", variant="prima
   return (
     <button 
       onClick={onClick}
-      title={title}
+      title={title}  // Defines the hover message
       className={`flex items-center justify-center w-fit h-fit text-base font-medium text-nowrap gap-2 px-3.5 py-2 rounded-xl ${variants[variant]}`}
     >
       {Icon && iconPosition === "start" && <Icon className="size-7" />}
