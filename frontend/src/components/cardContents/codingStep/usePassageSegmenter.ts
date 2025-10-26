@@ -35,8 +35,8 @@ export const usePassageSegmenter = ({
 
   /**
    * This function gets called when the user highlights a passage in the coding interface.
-   * It creates new code and passage entries based on the highlighted text,
-   * ensuring no overlapping highlights occur.
+   * It creates a new passage based on the highlighted text, and adds an empty code linked to it.
+   * Ensures that no overlapping highlights occur.
    */
   const createNewPassage = () => {
     // 1. Get selection and save relevant information
@@ -153,7 +153,6 @@ export const usePassageSegmenter = ({
     // Case D: highlight in the middle of an unhighlighted passage:
     //     new passages = [beforeHighlighted, highlighted with newCodeId in codeIds, afterHighlighted]
     else {
-      passageIdOfNewCode = newPassageId;
       newPassages = [
         {
           id: newPassageId++,
@@ -203,7 +202,7 @@ export const usePassageSegmenter = ({
     // 8. Add the new code to the codes state and the codebook
     setCodes((prev) => [
       ...prev,
-      { id: newCodeId, passageId: newPassageId.toString(), code: "" },
+      { id: newCodeId, passageId: passageIdOfNewCode, code: "" },
     ]);
 
     // 9. Newly added code should be active -> update activeCodeId

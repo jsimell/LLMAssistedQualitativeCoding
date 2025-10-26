@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useRef, ChangeEvent } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
 import { Passage, WorkflowContext } from "../../../context/WorkflowContext";
 import ToggleSwitch from "../../ToggleSwitch";
 import Codebook from "./Codebook";
@@ -21,15 +21,6 @@ const CodingCardContent = () => {
   }
   const {
     passages,
-    setPassages,
-    codes,
-    setCodes,
-    codebook,
-    setCodebook,
-    nextCodeId,
-    setNextCodeId,
-    nextPassageId,
-    setNextPassageId,
     setProceedAvailable,
     aiSuggestionsEnabled,
     setAiSuggestionsEnabled,
@@ -41,15 +32,6 @@ const CodingCardContent = () => {
     setProceedAvailable(true);
   }, []);
 
-  const passagesContainerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!passagesContainerRef.current) return;
-    const inputs: NodeListOf<HTMLInputElement> = passagesContainerRef.current.querySelectorAll("input");
-    inputs.forEach((input) => {
-      input.style.width = "1px";
-      input.style.width = `${input.scrollWidth + 4}px`;
-    });
-  }, []);
 
   // The purpose of the below is:
   // 1. ensure that the active code automatically gets focus when it is first created
@@ -60,7 +42,6 @@ const CodingCardContent = () => {
     if (activeCodeRef.current) {
       activeCodeRef.current.focus();
     }
-    setCodebook(new Set(codes.map((c) => c.code)));
   }, [activeCodeId]);
 
 
@@ -90,7 +71,7 @@ const CodingCardContent = () => {
         </span>
         {p.codeIds?.length > 0 &&
           p.codeIds.map((codeId) => 
-            <CodeBlob codeId={codeId} hasTrailingBreak={endsWithLineBreak} activeCodeId={activeCodeId} setActiveCodeId={setActiveCodeId} activeCodeRef={activeCodeRef}/>
+            <CodeBlob key={codeId} codeId={codeId} hasTrailingBreak={endsWithLineBreak} activeCodeId={activeCodeId} setActiveCodeId={setActiveCodeId} activeCodeRef={activeCodeRef}/>
           )}
       </span>
     );
@@ -101,7 +82,6 @@ const CodingCardContent = () => {
       <div
         onMouseUp={createNewPassage}
         className="flex-1 rounded-xl border-1 border-outline p-8 text-onBackground text-base whitespace-pre-wrap"
-        ref={passagesContainerRef}
       >
         {passages.map((p) => renderPassage(p))}
       </div>

@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
 import { WorkflowContext } from "../../../context/WorkflowContext";
 import { useCodeManager } from "./useCodeManager";
 import { XMarkIcon } from "@heroicons/react/24/solid";
@@ -18,20 +18,33 @@ const CodeBlob = ({
   setActiveCodeId,
   activeCodeRef,
 }: CodeBlobProps) => {
-  
-  const context = useContext(WorkflowContext);
-  if (!context) {
-    throw new Error("WorkflowContext must be used within a WorkflowProvider");
-  }
-  const { codes } = context;
+  const context = useContext(WorkflowContext)!; // Non-null assertion since parent already ensures WorkflowContext is provided
+  const { codes, codebook } = context;
 
   const codeObject = codes.find((c) => c.id === codeId);
   if (!codeObject) return null;
+  const [inputValue, setInputValue] = useState(codeObject.code);
 
   const { deleteCode, updateCode, handleKeyDown } = useCodeManager({
     activeCodeId,
     setActiveCodeId,
   });
+
+  useEffect(() => setInputValue(codeObject.code), [codeObject.code]);
+
+  // Ensure that code blob input widths adjust to their content when component mounts and when codebook gets updated
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!inputRef.current) return;
+    const inputEl = inputRef.current;
+    if (inputEl.value === "") {
+      const placeholderText = inputEl.getAttribute("placeholder") || "";
+      inputEl.style.width = `${placeholderText.length - 2}ch`;
+    } else {
+      inputEl.style.width = "1px";
+      inputEl.style.width = `${inputEl.scrollWidth + 4}px`;
+    }
+  }, [codebook]);
 
   /**
    * Adjusts the width of a code input to fit its current text.
@@ -46,24 +59,30 @@ const CodeBlob = ({
 
   return (
     <span
-      key={codeId}
       className={`inline-flex items-center w-fit px-2 bg-tertiaryContainer border border-gray-500 rounded-full hover:bg-tertiaryContainerHover focus:bg-tertiaryContainerHover focus:outline-none focus:ring-1 focus:ring-onBackground`}
     >
       <input
-        value={codeObject.code}
+        value={inputValue}
         size={Math.max(codeObject.code.length + 1, 8)}
         placeholder="Type code..."
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-          updateCode(codeId, e.target.value);
+          setInputValue(e.currentTarget.value);
           handleCodeBlobSizing(e);
         }}
         onFocus={() => setActiveCodeId(codeId)}
         onBlur={(e) => {
+          // Basically same as pressing Enter: finalize editing
           updateCode(codeId, e.currentTarget.value);
           setActiveCodeId(null);
         }}
         onKeyDown={(e) => handleKeyDown(e)}
-        ref={activeCodeId === codeId ? activeCodeRef : null} // used for ensuring that the input gets focused when it is first created
+        ref={(el) => {
+          inputRef.current = el; // By default, assign to inputRef
+          if (activeCodeId === codeId) {
+            // If the code blob is active, assign to activeCodeRef. This ensures that the input gets focused when it is first created
+            activeCodeRef.current = el;
+          }
+        }}
         className="bg-transparent border-none outline-none"
       />
       <button

@@ -1,13 +1,9 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { WorkflowContext } from "../../../context/WorkflowContext";
-import { PencilSquareIcon } from "@heroicons/react/24/solid";
+import CodeBookRow from "./CodeBookRow";
 
 const Codebook = () => {
-  const context = useContext(WorkflowContext);
-  if (!context) {
-    throw new Error("WorkflowContext must be used within a WorkflowProvider");
-  }
-  const { codebook, codes } = context;
+  const { codebook } =  useContext(WorkflowContext)!;  // Non-null assertion since parent already ensures WorkflowContext is provided
   const codebookArray = Array.from(codebook);
 
   return (
@@ -19,22 +15,10 @@ const Codebook = () => {
         {codebookArray.filter((code) => code.trim().length > 0).length ===
           0 && <p>No codes yet</p>}
         {codebookArray.map((code) => (
-          <div
+          <CodeBookRow
             key={code}
-            className="flex justify-between items-center gap-10 w-full"
-          >
-            {code.trim().length > 0 && (
-              <>
-                <span className="flex items-center gap-1.5 py-1">
-                  {code.trim()}
-                  <PencilSquareIcon className="w-6 h-6 p-0.5 flex-shrink-0 rounded-sm text-[#007a60] hover:bg-tertiary/10 cursor-pointer" />
-                </span>
-                <span>{`(${
-                  codes.filter((c) => c.code.trim() === code.trim()).length
-                })`}</span>
-              </>
-            )}
-          </div>
+            code={code}
+          />
         ))}
       </div>
     </div>

@@ -9,7 +9,7 @@ export interface Passage {
 
 export interface Code {
   id: number; // A unique id
-  passageId: string;
+  passageId: number;
   code: string;
 }
 
@@ -81,13 +81,24 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
 
   // Set the raw data as the first passage once it is uploaded
   useEffect(() => {
-  if (rawData) {
-    setNextPassageId(prevId => {
-      setPassages([{ id: prevId, order: 0, text: rawData, codeIds: [] }]);
-      return prevId + 1;
-    })
-  };
-}, [rawData]);
+    if (rawData) {
+      setNextPassageId(prevId => {
+        setPassages([{ id: prevId, order: 0, text: rawData, codeIds: [] }]);
+        return prevId + 1;
+      })
+    };
+  }, [rawData]);
+
+  // Keep codebook and the codeIds arrays of the passages in sync with the `codes` state
+  useEffect(() => {
+    setCodebook(new Set(codes.map((c) => c.code)));
+    setPassages((prevPassages) =>
+      prevPassages.map((p) => ({
+        ...p,
+        codeIds: codes.filter((c) => c.passageId === p.id).map((c) => c.id),
+      }))
+    );
+  }, [codes]);
 
   // Combine all states + updaters into one object
   const value = {
