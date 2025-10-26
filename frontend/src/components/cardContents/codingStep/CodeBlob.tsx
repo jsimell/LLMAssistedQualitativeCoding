@@ -59,7 +59,7 @@ const CodeBlob = ({
 
   return (
     <span
-      className={`inline-flex items-center w-fit px-2 bg-tertiaryContainer border border-gray-500 rounded-full hover:bg-tertiaryContainerHover focus:bg-tertiaryContainerHover focus:outline-none focus:ring-1 focus:ring-onBackground`}
+      className={`inline-flex items-center w-fit px-2 mr-1 bg-tertiaryContainer border border-gray-500 rounded-full hover:bg-tertiaryContainerHover focus:bg-tertiaryContainerHover focus:outline-none focus:ring-1 focus:ring-onBackground`}
     >
       <input
         value={inputValue}

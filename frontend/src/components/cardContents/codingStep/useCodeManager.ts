@@ -42,12 +42,22 @@ export const useCodeManager = ({
   const updateCode = (id: number, newValue: string) => {
     const codeObject = codes.find((c) => c.id === id);
     if (!codeObject) return;
-    setCodes((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, code: newValue } : c))
-    );
+
+    const codeList = separateMultipleCodes(newValue.trim());
+    let newCodeId = nextCodeId;
+    let newCodes = codes.filter((c) => c.id !== id);  // Create a new codes array to which updated codes will be added
+    codeList.forEach((code) => {
+      newCodes = [
+        ...newCodes,
+        { id: newCodeId++, passageId: codeObject.passageId, code: code },
+      ];
+    });
+    setCodes(newCodes);
+    setNextCodeId(newCodeId);
+    return;
   };
 
-  
+
   /**
    * Deletes a code.
    * @param id - the id of the code to be deleted
