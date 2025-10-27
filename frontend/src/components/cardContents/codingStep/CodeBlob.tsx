@@ -59,7 +59,14 @@ const CodeBlob = ({
 
   return (
     <span
-      className={`inline-flex items-center w-fit px-2 mr-1 bg-tertiaryContainer border border-gray-500 rounded-full hover:bg-tertiaryContainerHover focus:bg-tertiaryContainerHover focus:outline-none focus:ring-1 focus:ring-onBackground`}
+      className={`inline-flex items-center w-fit px-2 mr-1
+      bg-tertiaryContainer border-1 my-1 border-gray-400 rounded-full hover:bg-tertiaryContainerHover 
+      ${
+        activeCodeId === codeId
+          ? "bg-tertiaryContainerHover outline-1 outline-onBackground shadow-[0_0_0_2px_black]"
+          : ""
+      } 
+      focus:outline-none focus:ring-1 focus:ring-onBackground`}
     >
       <input
         value={inputValue}
@@ -91,7 +98,8 @@ const CodeBlob = ({
           e.preventDefault(); // Prevent input from losing focus
         }}
         onClick={() => deleteCode(codeId)}
-        className="bg-transparent text-gray-500 rounded-full hover:text-gray-800 hover:bg-onBackground/10 cursor-pointer"
+        className={`bg-transparent rounded-full hover:text-gray-800 hover:bg-onBackground/10 cursor-pointer
+          ${activeCodeId === codeId ? "text-gray-700" : "text-gray-500"}`}
       >
         <XMarkIcon className="size-5" />
       </button>
