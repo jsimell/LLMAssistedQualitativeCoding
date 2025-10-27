@@ -71,7 +71,7 @@ const CodingCardContent = () => {
         <span
           id={p.id.toString()}
           onClick={(e) => {
-            e.stopPropagation();
+            e.stopPropagation(); // Prevent triggering parent onMouseUp event
             if (p.codeIds?.length > 0) setActiveCodeId(p.codeIds[0]);
           }}
           className={`
