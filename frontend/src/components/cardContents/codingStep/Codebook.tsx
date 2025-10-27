@@ -1,10 +1,15 @@
-import { useContext } from "react";
+import { useContext, useMemo } from "react";
 import { WorkflowContext } from "../../../context/WorkflowContext";
 import CodeBookRow from "./CodeBookRow";
 
 const Codebook = () => {
-  const { codebook } =  useContext(WorkflowContext)!;  // Non-null assertion since parent already ensures WorkflowContext is provided
-  const codebookArray = Array.from(codebook);
+  const { codebook } = useContext(WorkflowContext)!;
+
+  const codebookArray = useMemo(() => {
+    return Array.from(codebook)
+      .sort((a, b) => a.localeCompare(b))
+      .filter((code) => code.trim().length > 0);
+  }, [codebook]); // Only re-sort when codebook changes
 
   return (
     <div className="flex flex-col items-center w-full h-fit min-w-50 max-w-sm rounded-xl border-1 border-outline">
@@ -12,13 +17,9 @@ const Codebook = () => {
         <p className="text-lg font-semibold">Codebook</p>
       </div>
       <div className="flex flex-col w-full px-6 py-4 items-center">
-        {codebookArray.filter((code) => code.trim().length > 0).length ===
-          0 && <p>No codes yet</p>}
+        {codebookArray.length === 0 && <p>No codes yet</p>}
         {codebookArray.map((code) => (
-          <CodeBookRow
-            key={code}
-            code={code}
-          />
+          <CodeBookRow key={code} code={code} />
         ))}
       </div>
     </div>
