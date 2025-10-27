@@ -38,10 +38,14 @@ export const usePassageSegmenter = ({
    * Ensures that no overlapping highlights occur.
    */
   const createNewPassage = () => {
-    // 1. Get selection and save relevant information
+    // 1. Get selection, save relevant information, and do some basic validation
     const selection = window.getSelection();
     if (!selection) {
       console.log("Selection undefined");
+      return;
+    }
+    // If there's no real range (i.e. not a highlight, just a click), do nothing.
+    if (selection.isCollapsed) {
       return;
     }
     const startNode = selection.anchorNode;
