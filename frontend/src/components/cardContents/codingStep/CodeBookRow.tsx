@@ -1,46 +1,72 @@
-import { PencilSquareIcon } from "@heroicons/react/24/solid";
+import { ArrowUturnLeftIcon, PencilSquareIcon } from "@heroicons/react/24/solid";
 import { useContext, useState } from "react";
 import { WorkflowContext } from "../../../context/WorkflowContext";
 import { useCodeManager } from "./useCodeManager";
+import SmallButton from "../../SmallButton.jsx";
 
 interface CodeBookRowProps {
   code: string;
 }
 
-const CodeBookRow = ({
-  code,
-}: CodeBookRowProps) => {
+const CodeBookRow = ({ code }: CodeBookRowProps) => {
   if (!code.trim()) return null;
 
-  const { codes } = useContext(WorkflowContext)!;  // Non-null assertion since parent already ensures WorkflowContext is provided
+  const { codes } = useContext(WorkflowContext)!; // Non-null assertion since parent already ensures WorkflowContext is provided
 
   const [editInputValue, setEditInputValue] = useState(code);
   const [showEditInteraction, setShowEditInteraction] = useState(false);
 
-  const { editAllInstancesOfCode } = useCodeManager({ activeCodeId: null, setActiveCodeId: () => {} }); // Dummy setters since we don't need them here
+  const { editAllInstancesOfCode } = useCodeManager({
+    activeCodeId: null,
+    setActiveCodeId: () => {},
+  }); // Dummy setters since we don't need them here
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      editAllInstancesOfCode(code, editInputValue);
-      setShowEditInteraction(false);
+      saveChanges();
     } else if (e.key === "Escape") {
-      setEditInputValue(code); // Reset to original code
-      setShowEditInteraction(false);
+      cancelChanges
     }
-  }
+  };
+
+  const saveChanges = () => {
+    editAllInstancesOfCode(code, editInputValue);
+    setShowEditInteraction(false);
+  };
+
+  const cancelChanges = () => {
+    setEditInputValue(code); // Reset to original code
+    setShowEditInteraction(false);
+  };
 
   return (
-    <div key={code} className={`flex justify-between items-center gap-10 w-full ${showEditInteraction ? "flex rounded-lg mb-4" : ""}`}>
+    <div
+      key={code}
+      className={`flex justify-between items-center gap-10 w-full ${
+        showEditInteraction ? "flex rounded-lg mb-4" : ""
+      }`}
+    >
       {showEditInteraction ? (
         <div className="flex flex-col gap-1">
           <span className="ml-[1px]">Edit all instances:</span>
-          <input 
-            type="text" 
-            value={editInputValue}
-            onChange={(e) => setEditInputValue(e.target.value)}
-            onKeyDown={(e) => handleKeyDown(e)}
-            className="border border-outline rounded-sm pl-[1px]"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={editInputValue}
+              onChange={(e) => setEditInputValue(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e)}
+              onBlur={() => saveChanges()}
+              className="border border-outline rounded-sm pl-[1px] h-fit pr-8"
+              autoFocus
+            />
+            <div
+              className="absolute top-1/2 -translate-y-1/2 right-0 p-1 hover:bg-onBackground/10 rounded-sm cursor-pointer flex items-center justify-center"
+              onClick={() => setEditInputValue(code)}
+              title="Cancel changes"
+            >
+              <ArrowUturnLeftIcon title="Undo changes" className="size-4 text-onBackground" />
+            </div>
+          </div>
         </div>
       ) : (
         <span className="flex items-center gap-1.5 py-1">
