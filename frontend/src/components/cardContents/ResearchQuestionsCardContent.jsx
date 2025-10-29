@@ -14,14 +14,24 @@ const ResearchQuestionsCardContent = () => {
     (contextInfo && researchQuestions && currentStep === 3)  ? setProceedAvailable(true) : null;
   }, [currentStep]);
 
+  // Populate the input fields with previously submitted info when the component loads
+  useEffect(() => {
+    if (researchQuestions) setCurrentRQs(researchQuestions);
+    if (contextInfo) setCurrentContextInfo(contextInfo);
+  }, [researchQuestions, contextInfo]);
+
   const handleSubmit = () => {
+    if (!currentRQs.trim()) {
+      alert("Please enter at least one research question!");
+      return;
+    }
     setResearchQuestions(currentRQs);
     setContextInfo(currentContextInfo);
     setProceedAvailable(true);
   }
 
   return (
-    <div className="flex flex-col w-full items-center">
+    <div className="flex flex-col w-full px-5 items-center">
       <ul className="list-disc ml-4 pb-3">
         <li>
           Enter your <b>research questions</b> for inductive coding below. You can include multiple questions in the same field.
@@ -52,8 +62,15 @@ const ResearchQuestionsCardContent = () => {
           />
         </div>
       </form>
-      {contextInfo && researchQuestions && <p className="pt-3 pb-4">Information has already been submitted. Submit again to modify it.</p>}
       <Button label="Submit" onClick={handleSubmit} variant={"tertiary"}></Button>
+      {researchQuestions && (
+        <div className="pt-3 pb-4 w-full">
+          <p className="pb-3">Resubmit the form to change the currently submitted information:</p>
+          <p><b>Research questions:</b> {researchQuestions}</p>
+          <p><b>Contextual information:</b> {contextInfo ? contextInfo : "-"}</p>
+
+        </div>
+      )}
     </div>
   );
 }
