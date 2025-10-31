@@ -1,7 +1,7 @@
 import { ArrowUturnLeftIcon, PencilSquareIcon } from "@heroicons/react/24/solid";
 import { useContext, useState } from "react";
 import { WorkflowContext } from "../../../context/WorkflowContext";
-import { useCodeManager } from "./useCodeManager";
+import { useCodeManager } from "./hooks/useCodeManager.js";
 import SmallButton from "../../SmallButton.jsx";
 
 interface CodeBookRowProps {

@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect, useRef } from "react";
 import { WorkflowContext } from "../../../context/WorkflowContext";
-import { useCodeManager } from "./useCodeManager";
+import { useCodeManager } from "./hooks/useCodeManager";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 
 interface CodeBlobProps {
