@@ -14,7 +14,7 @@ let openai: OpenAI | null = null;
  * @param systemPrompt The system prompt for this conversation
  * @param conversationKey Unique key to identify this conversation (e.g., "full-coding", "passage-coding")
  */
-export const initializeConversation = async (
+const initializeConversation = async (
   apiKey: string, 
   systemPrompt: string,
   conversationKey: string = "default"
@@ -28,6 +28,11 @@ export const initializeConversation = async (
   const existing = conversations.get(conversationKey);
   if (existing && existing.systemPrompt === systemPrompt) {
     return existing.conversation;
+  }
+
+  // Remove possible existing conversation that has an outdated system prompt
+  if (existing) {
+    conversations.delete(conversationKey);
   }
 
   // Create new conversation
@@ -50,7 +55,7 @@ export const initializeConversation = async (
 /**
  * Calls the OpenAI API with the appropriate conversation context.
  */
-export const callOpenAI = async (
+export const statefullyCallOpenAI = async (
   apiKey: string, 
   systemPrompt: string, 
   userPrompt: string,
@@ -74,6 +79,41 @@ export const callOpenAI = async (
     model: model,
     input: userPrompt,
   });
+
+  return response;
+};
+
+/**
+ * Calls OpenAI STATELESS (no conversation history) - faster, simpler.
+ * Use for: Quick, independent suggestions where context isn't cumulative.
+ * 
+ * Each call is independent - no history is maintained.
+ */
+export const callOpenAIStateless = async (
+  apiKey: string,
+  prompt: string,
+  model: string = "gpt-4o-mini"
+): Promise<OpenAI.Responses.Response> => {
+  // Initialize OpenAI client if needed
+  if (!openai) {
+    openai = new OpenAI({apiKey: apiKey, dangerouslyAllowBrowser: true});
+  }
+
+  const acceptedModels = ["gpt-5", "gpt-5-mini", "gpt-5-nano", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4o", "gpt-4o-mini"];
+  if (!acceptedModels.includes(model)) {
+    console.warn(`Model "${model}" is not in the list of accepted models. Defaulting to "gpt-4o-mini".`);
+    model = "gpt-4o-mini";
+  }
+
+  // Create a single model response (no caching)
+  const response = await openai.responses.create({
+    model: model,
+    input: prompt,
+  });
+
+  if (!response) {
+    throw new Error('OpenAI stateless call failed: No response received');
+  }
 
   return response;
 };
