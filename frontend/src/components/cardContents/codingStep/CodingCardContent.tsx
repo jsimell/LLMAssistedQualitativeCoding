@@ -16,7 +16,7 @@ const CodingCardContent = () => {
     setActiveCodeId,
   });
 
-  const { updateSuggestions, currentSuggestions } = useFullSuggestions();
+  const { updateSuggestions, latestSuggestions } = useFullSuggestions();
 
   // Get global states and setters from the context
   const context = useContext(WorkflowContext);
