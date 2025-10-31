@@ -1,9 +1,10 @@
-import { useState, useContext, useEffect, useRef } from "react";
+import { useState, useContext, useEffect, useRef, use } from "react";
 import { Passage, WorkflowContext } from "../../../context/WorkflowContext";
 import ToggleSwitch from "../../ToggleSwitch";
 import Codebook from "./Codebook";
 import CodeBlob from "./CodeBlob";
-import { usePassageSegmenter } from "./usePassageSegmenter";
+import { usePassageSegmenter } from "./hooks/usePassageSegmenter";
+import { useFullSuggestions } from "./hooks/useFullSuggestions";
 
 const CodingCardContent = () => {
   // Local state for tracking the currently active passage and code input
@@ -14,6 +15,8 @@ const CodingCardContent = () => {
     activeCodeId,
     setActiveCodeId,
   });
+
+  const { updateSuggestions, currentSuggestions } = useFullSuggestions();
 
   // Get global states and setters from the context
   const context = useContext(WorkflowContext);
@@ -99,7 +102,7 @@ const CodingCardContent = () => {
       >
         {passages.map((p) => renderPassage(p))}
       </div>
-      <div className="flex flex-col gap-4 sticky top-5 h-fit">
+      <div className="flex flex-col items-center gap-4 sticky top-5 h-fit w-fit min-w-50 max-w-sm">
         <Codebook />
         <div className="flex gap-2 items-center justify-center rounded-xl border-1 border-outline p-6">
           <p>AI suggestions</p>
