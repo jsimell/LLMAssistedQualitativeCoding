@@ -228,6 +228,13 @@ export const useFullSuggestions = () => {
         const parsedSuggestions = parseAiResponse(codedPassages);
 
         // Success (no error caught) - update state and exit
+        // On the first call, set both current and next suggestions as the same
+        if (!currentSuggestions) {
+          setCurrentSuggestions(parsedSuggestions);
+          setNextSuggestions(parsedSuggestions);
+          return;
+        }
+        // On subsequent calls, move suggestions from next to current, and set new next suggestions
         setCurrentSuggestions(nextSuggestions);
         setNextSuggestions(parsedSuggestions);
         setIsLoading(false);
