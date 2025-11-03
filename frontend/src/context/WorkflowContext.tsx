@@ -1,16 +1,26 @@
-import React, { createContext, useState, useEffect, use } from "react";
+import React, { createContext, useState, useEffect } from "react";
 
 export interface Passage {
   id: number; // A unique id
   order: number;
   text: string;
   codeIds: number[];
+  aiSuggestions: AIsuggestion[]; // links the passage to its AI suggestions
 }
 
 export interface Code {
   id: number; // A unique id
   passageId: number;
   code: string;
+}
+
+export interface AIsuggestion {
+  id: number; // A unique id
+  passageId: number | null; // The id of the parent passage this suggestion is linked to
+  passageText: string; // The text content of the passage (a substring of the parent passage)
+  startIndex: number;
+  endIndex: number;
+  suggestedCodes: string;  // The suggested codes as a string where the codes are separated with '; '
 }
 
 export interface FileInfo {
@@ -58,6 +68,9 @@ export interface WorkflowContextType {
   nextPassageId: number;
   setNextPassageId: Setter<number>;
 
+  nextSuggestionId: number;
+  setNextSuggestionId: Setter<number>;
+
   codebook: Set<string>;
   setCodebook: Setter<Set<string>>;
 }
@@ -75,6 +88,7 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   const [proceedAvailable, setProceedAvailable] = useState<boolean>(false);  // Defines whether or not user can currently proceed to the next step
   const [nextCodeId, setNextCodeId] = useState<number>(0);  // Next unique id for a new code
   const [nextPassageId, setNextPassageId] = useState<number>(0);   // Next unique id for a new passage
+  const [nextSuggestionId, setNextSuggestionId] = useState<number>(0); // Next unique id for a new AI suggestion
   const [passages, setPassages] = useState<Passage[]>([]);  // The passages of the data coding phase
   const [codes, setCodes] = useState<Code[]>([]);  // The codes of the data coding phase (contains all code instances, even duplicates)
   const [codebook, setCodebook] = useState<Set<string>>(new Set()) // Contains all unique codes
@@ -83,22 +97,39 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (rawData) {
       setNextPassageId(prevId => {
-        setPassages([{ id: prevId, order: 0, text: rawData, codeIds: [] }]);
+        setPassages([{ id: prevId, order: 0, text: rawData, codeIds: [], aiSuggestions: [] }]);
         return prevId + 1;
       })
     };
   }, [rawData]);
 
-  // Keep codebook and the codeIds arrays of the passages in sync with the `codes` state
+  // Keep codebook in sync with the `codes` state
   useEffect(() => {
     setCodebook(new Set(codes.map((c) => c.code)));
-    setPassages((prevPassages) =>
-      prevPassages.map((p) => ({
-        ...p,
-        codeIds: codes.filter((c) => c.passageId === p.id).map((c) => c.id),
-      }))
-    );
   }, [codes]);
+
+  // Debug: Log passages and their AI suggestions whenever passages change
+  useEffect(() => {
+    console.log("=== PASSAGES STATE UPDATE ===");
+    passages.forEach((passage) => {
+      console.log(`\nPassage ${passage.order})`);
+      console.log(`  Text: "${passage.text.substring(0, 50)}${passage.text.length > 50 ? '...' : ''}"`);
+      console.log(`  CodeIds: [${passage.codeIds.join(", ")}]`);
+      console.log(`  AI Suggestions (${passage.aiSuggestions?.length || 0}):`);
+
+      if (!passage.aiSuggestions || passage.aiSuggestions.length === 0) {
+        console.log(`    (none)`);
+      } else {
+        passage.aiSuggestions.forEach((suggestion) => {
+          console.log(`    - Suggestion ${suggestion.id}:`);
+          console.log(`      PassageText: "${suggestion.passageText.substring(0, 40)}..."`);
+          console.log(`      Range: [${suggestion.startIndex}, ${suggestion.endIndex}]`);
+          console.log(`      Codes: "${suggestion.suggestedCodes}"`);
+        });
+      }
+    });
+    console.log("==============================\n");
+  }, [passages]);
 
   // Combine all states + updaters into one object
   const value = {
@@ -114,7 +145,8 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
     codes, setCodes,
     nextCodeId, setNextCodeId,
     nextPassageId, setNextPassageId,
-    codebook, setCodebook
+    codebook, setCodebook,
+    nextSuggestionId, setNextSuggestionId,
   };
 
   // Make the states available to all children components

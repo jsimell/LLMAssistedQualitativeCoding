@@ -80,6 +80,7 @@ export const statefullyCallOpenAI = async (
     input: userPrompt,
   });
 
+  console.log("OpenAI stateful call completed. Response object:", response);
   return response;
 };
 
@@ -115,5 +116,6 @@ export const callOpenAIStateless = async (
     throw new Error('OpenAI stateless call failed: No response received');
   }
 
+  console.log("OpenAI stateless call completed. Response object:", response);
   return response;
 };

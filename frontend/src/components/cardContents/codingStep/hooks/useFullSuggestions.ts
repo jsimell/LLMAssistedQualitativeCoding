@@ -1,5 +1,5 @@
-import { useContext, useEffect, useState } from "react";
-import { WorkflowContext } from "../../../../context/WorkflowContext";
+import { useContext } from "react";
+import { AIsuggestion, WorkflowContext } from "../../../../context/WorkflowContext";
 import { statefullyCallOpenAI } from "../../../../services/openai";
 import OpenAI from "openai";
 
@@ -7,10 +7,6 @@ const MAX_RETRY_ATTEMPTS = 2;
 const CONVERSATION_KEY = "full-coding"; // Add this constant
 const OPENAI_MODEL = "gpt-4o-mini"; // Define the model to use
 
-interface CodedPassage {
-  passage: string;
-  codes: string[];
-}
 
 export const useFullSuggestions = () => {
   // Get global states from the context
@@ -19,10 +15,6 @@ export const useFullSuggestions = () => {
     throw new Error("useFullSuggestions must be used within a WorkflowProvider");
   }
   const { rawData, researchQuestions, contextInfo, passages, codes, codebook, apiKey } = context;
-
-  // Local states
-  const [latestSuggestions, setLatestSuggestions] = useState<CodedPassage[] | null>(null);  // Currently active suggestions
-  const [isLoading, setIsLoading] = useState(false);
 
 
   /**
@@ -35,8 +27,9 @@ export const useFullSuggestions = () => {
   const constructSystemPrompt = () => {
     return `
       ## ROLE:
-      You are an expert qualitative coding assistant. Your task is to finish the coding of the following dataset by suggesting codes for passages that have NOT yet been coded.
-    
+      You are an expert qualitative analyst. Your task is to code a user provided subset of the following dataset on each request.
+
+      ## FULL DATASET (you will code subsets of this):
       ---BEGIN DATA---
       ${rawData}
       ---END DATA---
@@ -48,40 +41,37 @@ export const useFullSuggestions = () => {
 
       ## BEHAVIOR RULES:
       ### How should you code the dataset?
-      - You will receive user messages containing the current coding state: all passages that have already been coded and the full codebook.
-      - Your task is to identify ALL the remaining RELEVANT and UNCODED passages from the dataset and suggest codes for them.
-      - You must mimic the user's coding style and terminology when suggesting new codes.
-      - You must infer which passages are uncoded by comparing the dataset with the passages in the current coding state.
-      - Your coding decisions must be steered by the current coding state, research questions, your previous suggestions, and possible additional context information.
-      - Treat the current coding state as your fixed and authoritative starting point for the coding; build your suggestions on top of it.
-      - In other words, your suggestions should form a complete and internally consistent coding of the dataset, if added to the current coding state.
+      - You will receive user messages containing three things:
+        1. a subset of the dataset that the user wants you to code,
+        2. the current codebook, 
+        3. few-shot examples displaying the coding style of the user.
+      - Your task is to identify all RELEVANT and UNCODED passages from the subset and suggest codes for them.
+      - You must mimic the user's coding style and terminology that the few-shot examples demonstrate.
+      - You must also mimic the user's passage selection style (length, detail, full sentences vs. fragments, etc.) when suggesting passages.
+      - Your coding decisions must be steered by the research questions and possible additional context information found below.
       - In your response, you must never:
         1. Include passages with no codes assigned.
         2. Include passages that are not relevant to the research questions.
-        3. Include passages that have already been coded by the user.
       - Only use passages that exactly match the original text (verbatim, including spaces and punctuation).
-      - If a passage occurs multiple times in the dataset, code all occurrences the same way, unless surrounding context suggests otherwise.
-      - If there are clearly no relevant passages left to code, respond with an empty array [].
+      - If a passage occurs multiple times in the subset, code all occurrences the same way, unless surrounding context suggests otherwise.
+      - If there are clearly no relevant passages to code in the subset, respond with an empty array [].
       ### How should you select passages and codes?
-      - Focus on passages that are relevant to the research questions.
-      - For each relevant uncoded passage, suggest 1-5 codes that best fit it.
+      - Only code passages that are relevant to the research questions.
       - Reuse existing codes from the codebook whenever possible; introduce new ones only if conceptually distinct.
-      ### How should your responses relate to your previous suggestions?
-      - Preserve your previously suggested passages and codes (if there are any) unless they conflict with the latest user updates or new codes.
-      - For example, if the user has added new codes or modified existing ones, update your suggestions accordingly while keeping the rest intact.
+      - You can suggest multiple codes for a single passage if appropriate.
       ### Additional guidelines: 
       - Maintain the natural order of passages from the dataset.
 
       ## RESPONSE FORMAT:
       Output a pure JSON array of objects. Each object must have:
-      1. "passage": exact substring from the dataset.
-      2. "codes": array of code suggestions for the passage.
+      1. "passageText": exact substring from the dataset.
+      2. "suggestedCodes": array of code suggestions for the passage.
 
       Example:
       [
-        {"passage": "first relevant uncoded passage here", "codes": ["new code 1", "new code 2"]},
-        {"passage": "second relevant uncoded passage here", "codes": ["code from the codebook", "another code from the codebook"]},
-        {"passage": "third relevant uncoded passage here", "codes": ["code from the codebook", "new code 3"]},
+        {"passageText": "first relevant uncoded passage here", "suggestedCodes": ["new code 1", "new code 2"]},
+        {"passageText": "second relevant uncoded passage here", "suggestedCodes": ["code from the codebook", "another code from the codebook"]},
+        {"passageText": "third relevant uncoded passage here", "suggestedCodes": ["code from the codebook", "new code 3"]},
       ]
 
       - Output must be valid JSON (no Markdown formatting, no text outside the array).
@@ -96,27 +86,36 @@ export const useFullSuggestions = () => {
 
   /**
    * Constructs the prompt (role: user) for the next AI suggestion based on the current context.
+   * Contains the current codebook, few shot examples, and the subset of data to be coded.
    *
    * @returns A string prompt for the AI.
    */
-  const constructUserPrompt = () => {
-    // Create few-shot examples from existing passages and codes
-    const codingState = passages.filter(p => p.codeIds.length > 0).map((p) => ({
-      passage: p.text,
-      codes: p.codeIds.map((id) => codes.find((c) => c.id === id)?.code).filter(Boolean),
-    }));
+  const constructUserPrompt = (passageId: number) => {
+    // Randomly choose up to 10 coded examples from the passages state
+    const fewShotExamples = passages
+      .filter(p => p.codeIds.length > 0) // take only coded passages
+      .sort(() => Math.random() - 0.5) // shuffle
+      .slice(0, 10) // take up to 10
+      .map(p => {
+        const codes_: string = p.codeIds.map(id => codes.find(c => c.id === id)?.code).filter(Boolean).join('", "');
+        return `{"passage": "${p.text}", "codes": [${codes_ ? `"${codes_}"` : ""}]}`;
+      })
+      .join(",\n");
 
     return `
+        ## SUBSET TO CODE:
+        ${passages.find(p => p.id === passageId)?.text}
+
         CURRENT CODEBOOK:
         ${Array.from(codebook).map((code) => `- ${code}`).join("\n")}
 
-        CODING STATE:
-        ${codingState.map((ex) => JSON.stringify(ex)).join(",\n")}
+        FEW-SHOT EXAMPLES:
+        ${fewShotExamples}
         `;
   };
 
 
-  const fuzzyMatchSuggestions = (suggestions: CodedPassage[]): CodedPassage[] => {
+  const fuzzyMatchSuggestions = (suggestions: AIsuggestion[]): AIsuggestion[] => {
     // TODO: Implement logic
     // - the function should compare each suggested passage with existing passages in the context
     // - if a suggested passage is very similar to an existing passage (e.g., Levenshtein distance below a threshold), consider it a match
@@ -129,107 +128,74 @@ export const useFullSuggestions = () => {
    * Converts the OpenAI response into an array of AiSuggestion objects.
    *
    * @param response - The OpenAI response object.
-   * @returns An array of AiSuggestion objects.
-   * @throws Error if the response format is invalid or contains no valid suggestions.
+   * @returns AIsuggestions[]
    */
-  const parseAiResponse = (response: OpenAI.Responses.Response): CodedPassage[] => {
+  const parseAiResponse = (response: OpenAI.Responses.Response, parentPassageId: number): AIsuggestion[] => {
     const text = response.output_text.trim();
     const start = text.indexOf("[");
     const end = text.lastIndexOf("]") + 1;
 
     if (start === -1 || end === -1) {
-      throw new Error("INVALID_FORMAT: No JSON array found in response");
+      throw new Error("INVALID_RESPONSE_FORMAT");
     }
 
     const jsonPart = text.slice(start, end);
-    let codedPassages: CodedPassage[];
+    let aiSuggestions: AIsuggestion[] = [];
     
-    try {
-      codedPassages = JSON.parse(jsonPart) as CodedPassage[];
-    } catch {
-      throw new Error("INVALID_JSON: Response contained malformed JSON");
-    }
-
-    // Check that each object has the required structure
-    codedPassages.forEach(cp => {
-      if (
-        !["passage","codes"].every(k => k in cp) ||
-        Object.keys(cp).length !== 2 ||
-        typeof cp.passage !== "string" ||
-        !Array.isArray(cp.codes) ||
-        !cp.codes.every(c => typeof c === "string")
-      ) throw new Error("INVALID_JSON_STRUCTURE: Response array contained improperly structured objects.");
-    });
-    
-    // Filter out passages with empty codes array
-    const filtered = codedPassages.filter(s => s.codes.length > 0);
-    
-    if (filtered.length === 0) {
-      throw new Error("EMPTY_RESULT: No valid code suggestions found");
-    }
-    
-    return filtered;
+    // TODO: finish implementation
+    return aiSuggestions;
   };
 
 
   /**
-   * Updates the AI suggestions with automatic retry on recoverable errors.
+   * Fetches AI suggestions for an uncoded section of the data with automatic retry on recoverable errors.
    * Retries up to MAX_RETRY_ATTEMPTS times with clarifying messages when parsing fails.
-   * 
-   * @throws Error if all retry attempts fail or a fatal error occurs.
+   * @returns AIsuggestions[], or an empty array if all attempts fail.
    */
-  const updateSuggestions = async () => {
-    setIsLoading(true);
+  const getFullSuggestions = async (passageId: number) => {
     let attempt = 0;
-    let previousError: Error | null = null;
+    let clarificationMessage = "";
 
     while (attempt < MAX_RETRY_ATTEMPTS) {
       try {
         let clarificationMessage: string | undefined;
 
-        // Add clarification based on previous error
-        if (previousError?.message.startsWith("INVALID_FORMAT")) {
-          clarificationMessage = "Your previous response did not contain a valid JSON array. Please ensure your response is ONLY a JSON array with no additional text or markdown formatting.";
-        } else if (previousError?.message.startsWith("INVALID_JSON")) {
-          clarificationMessage = "Your previous response contained malformed JSON. Please ensure the JSON is properly formatted with correct syntax.";
-        } else if (previousError?.message.startsWith("EMPTY_RESULT")) {
-          clarificationMessage = "Your previous response contained no valid suggestions. If there are truly no more passages to code, return the existing coding state exactly as provided.";
-        } else if (previousError?.message.startsWith("INVALID_JSON_STRUCTURE")) {
-          clarificationMessage = "Your previous response contained improperly structured objects. Please ensure each object in the array has the correct structure: {'passage': '...', 'codes': ['code1', 'code2']}.";
-        } else {
-          clarificationMessage = "";
-        }
-
-        const codedPassages = await statefullyCallOpenAI(
+        const aiSuggestions = await statefullyCallOpenAI(
           apiKey, 
           constructSystemPrompt(), 
-          clarificationMessage + constructUserPrompt(),
+          constructUserPrompt(passageId) + clarificationMessage,
           CONVERSATION_KEY, // Add conversation key
           OPENAI_MODEL
         );
-        const parsedSuggestions = parseAiResponse(codedPassages);
+        const parsedSuggestions = parseAiResponse(aiSuggestions, passageId);
 
         // Success (no error caught) - update state and exit
-        setLatestSuggestions(parsedSuggestions)
-        setIsLoading(false);
-        return;
+        return parsedSuggestions;
 
       } catch (error) {
-        previousError = error instanceof Error ? error : new Error(String(error));
-        console.warn(`AI suggestion attempt ${attempt + 1} failed:`, previousError.message);
+        // Parsing failed, retry with a clarifying message
+        clarificationMessage = `
+          ## IMPORTANT NOTE!
+          Your previous response was malformed! 
+          Please ensure the JSON is properly formatted with correct syntax. 
+          Please ensure each object in the array has the correct structure: 
+          {'passageText': '...', 'suggestedCodes': ['code1', 'code2']}.
+          Ensure you include only the JSON array in your response without any additional text.
+        `;
+        console.warn(`AI suggestion attempt ${attempt + 1} failed. Retrying...`);
         attempt++;
 
-        // If it's a network/API error (not a parsing error), don't retry
-        if (!previousError.message.match(/^(INVALID_FORMAT|INVALID_JSON|INVALID_JSON_STRUCTURE|EMPTY_RESULT)/)) {
-          break;
+        // If the error is non-response format related, do not retry
+        if (error instanceof Error && error.message !== "INVALID_RESPONSE_FORMAT") {
+          console.error("Non-recoverable error encountered:", error); 
+          break; 
         }
       }
     }
+    return [];  // Return empty array if all attempts fail
   };
 
   return {
-    latestSuggestions,
-    isLoading,
-    updateSuggestions,
+    getFullSuggestions,
   };
 };
