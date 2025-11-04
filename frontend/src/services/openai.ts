@@ -17,7 +17,7 @@ let openai: OpenAI | null = null;
 const initializeConversation = async (
   apiKey: string, 
   systemPrompt: string,
-  conversationKey: string = "default"
+  conversationKey: string
 ) => {
   // Initialize OpenAI client if needed
   if (!openai) {
@@ -59,7 +59,7 @@ export const statefullyCallOpenAI = async (
   apiKey: string, 
   systemPrompt: string, 
   userPrompt: string,
-  conversationKey: string = "default",
+  conversationKey: string,
   model: string = "gpt-4-mini"
 ): Promise<OpenAI.Responses.Response> => {
   const conversation = await initializeConversation(apiKey, systemPrompt, conversationKey);
