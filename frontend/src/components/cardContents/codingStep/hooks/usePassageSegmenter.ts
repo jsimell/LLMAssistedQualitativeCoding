@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { Passage, WorkflowContext } from "../../../../context/WorkflowContext";
 import { useAIsuggestionManager } from "./useAIsuggestionManager";
 
@@ -31,6 +31,25 @@ export const usePassageSegmenter = ({
 
   const { updateSuggestionsForPassage } = useAIsuggestionManager();
 
+  // Track which passages need AI suggestions
+  const passagesNeedingSuggestionsRef = useRef<number[]>([]);
+
+  // Trigger AI suggestions when new passages are added
+  useEffect(() => {
+    if (passagesNeedingSuggestionsRef.current.length > 0) {
+      const ids = [...passagesNeedingSuggestionsRef.current];
+      passagesNeedingSuggestionsRef.current = [];
+      
+      ids.forEach((id) => {
+        const passage = passages.find(p => p.id === id);
+        if (passage) {
+          updateSuggestionsForPassage(id);
+        }
+      });
+    }
+  }, [passages]);
+
+  
   /**
    * This function gets called when the user highlights a passage in the coding interface.
    * It creates a new passage based on the highlighted text, and adds an empty code linked to it.
@@ -214,12 +233,8 @@ export const usePassageSegmenter = ({
       { id: newCodeId, passageId: passageIdOfNewCode, code: "" },
     ]);
 
-    // 9. Update the AI suggestions for all the new passages.
-    // The setTimeout call ensures that the AI suggestions update only after the previous passages state update finishes.
-    const idsToUpdate = newPassages.map(p => p.id);
-    setTimeout(() => {
-      idsToUpdate.forEach((id) => updateSuggestionsForPassage(id));
-    }, 0);
+    // 9. Mark new passages as needing AI suggestions
+    passagesNeedingSuggestionsRef.current = newPassages.map(p => p.id);
 
     // 10. Newly added code should be active -> update activeCodeId
     setActiveCodeId(newCodeId);

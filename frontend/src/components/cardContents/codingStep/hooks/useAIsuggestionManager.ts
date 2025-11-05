@@ -39,6 +39,7 @@ export const useAIsuggestionManager = () => {
 
     // CASE 1: Uncoded passage -> get full suggestions
     if (passage.codeIds.length === 0) {
+      console.log("### Calling getFullSuggestions for passage", passage.order, "###");
       newSuggestionsArray = await getFullSuggestions(passage.id);
       setPassages(prev => {
         const currentPassage = prev.find(p => p.id === passageId);
@@ -60,6 +61,7 @@ export const useAIsuggestionManager = () => {
         })
         .filter(Boolean);
 
+      console.log("### Calling getCodeSuggestions for passage", passage.order, "###");
       const codeSuggestions = await getCodeSuggestions(passage.text, existingCodes);
 
       // If API returned nothing, add an empty suggestions array
@@ -106,7 +108,27 @@ export const useAIsuggestionManager = () => {
     return newSuggestionsArray;
   };
 
+  /** Removes a specific suggestion from a passage's aiSuggestions.
+   * 
+   * @param passageId 
+   * @param suggestionId 
+   */
+  const removeSuggestionFromPassage = (passageId: number, suggestionId: number) => {
+    setPassages(prev =>
+      prev.map(p => {
+        if (p.id === passageId) {
+          return {
+            ...p,
+            aiSuggestions: p.aiSuggestions.filter(s => s.id !== suggestionId),
+          };
+        }
+        return p;
+      })
+    );
+  };
+
   return {
     updateSuggestionsForPassage,
+    removeSuggestionFromPassage,
   };
 };

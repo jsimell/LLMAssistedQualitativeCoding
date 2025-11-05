@@ -1,27 +1,42 @@
-import { useContext } from "react";
-import { AIsuggestion, WorkflowContext } from "../../../../context/WorkflowContext";
+import { useContext, useEffect } from "react";
+import {
+  AIsuggestion,
+  WorkflowContext,
+} from "../../../../context/WorkflowContext";
 import { statefullyCallOpenAI } from "../../../../services/openai";
 import OpenAI from "openai";
 
 const MAX_RETRY_ATTEMPTS = 2;
-const CONVERSATION_KEY = "full-coding"; // Add this constant
 const OPENAI_MODEL = "gpt-4o-mini"; // Define the model to use
-
+const MIN_FEW_SHOT_EXAMPLES = 1; // Minimum number of coded passages required for few-shot examples
 
 export const useFullSuggestions = () => {
   // Get global states from the context
   const context = useContext(WorkflowContext);
   if (!context) {
-    throw new Error("useFullSuggestions must be used within a WorkflowProvider");
+    throw new Error(
+      "useFullSuggestions must be used within a WorkflowProvider"
+    );
   }
-  const { rawData, researchQuestions, contextInfo, passages, codes, codebook, apiKey } = context;
+
+  const {
+    rawData,
+    researchQuestions,
+    contextInfo,
+    passages,
+    codes,
+    codebook,
+    apiKey,
+    nextSuggestionId,
+    setNextSuggestionId,
+  } = context;
 
 
   /**
    * Constructs the system prompt (role: developer) for the AI suggestions based on the current context.
    * This prompt is sent only once per conversation, when the OpenAI instance is initialized.
    * Should be called again when research questions or context info change, to re-initialize the conversation.
-   * 
+   *
    * @returns A string prompt for the AI.
    */
   const constructSystemPrompt = () => {
@@ -52,7 +67,8 @@ export const useFullSuggestions = () => {
       - In your response, you must never:
         1. Include passages with no codes assigned.
         2. Include passages that are not relevant to the research questions.
-      - Only use passages that exactly match the original text (verbatim, including spaces and punctuation).
+      - Only use passages that exactly match the original text (verbatim, case-sensitive, identical spaces and punctuation).
+      - Ensure that you use correct case for all the letters in the passages.
       - If a passage occurs multiple times in the subset, code all occurrences the same way, unless surrounding context suggests otherwise.
       - If there are clearly no relevant passages to code in the subset, respond with an empty array [].
       ### How should you select passages and codes?
@@ -64,14 +80,14 @@ export const useFullSuggestions = () => {
 
       ## RESPONSE FORMAT:
       Output a pure JSON array of objects. Each object must have:
-      1. "passageText": exact substring from the dataset.
+      1. "subPassageText": exact substring from the dataset.
       2. "suggestedCodes": array of code suggestions for the passage.
 
       Example:
       [
-        {"passageText": "first relevant uncoded passage here", "suggestedCodes": ["new code 1", "new code 2"]},
-        {"passageText": "second relevant uncoded passage here", "suggestedCodes": ["code from the codebook", "another code from the codebook"]},
-        {"passageText": "third relevant uncoded passage here", "suggestedCodes": ["code from the codebook", "new code 3"]},
+        {"subPassageText": "first relevant uncoded passage here", "suggestedCodes": ["new code 1", "new code 2"]},
+        {"subPassageText": "second relevant uncoded passage here", "suggestedCodes": ["code from the codebook", "another code from the codebook"]},
+        {"subPassageText": "third relevant uncoded passage here", "suggestedCodes": ["code from the codebook", "new code 3"]},
       ]
 
       - Output must be valid JSON (no Markdown formatting, no text outside the array).
@@ -83,7 +99,6 @@ export const useFullSuggestions = () => {
       `;
   };
 
-
   /**
    * Constructs the prompt (role: user) for the next AI suggestion based on the current context.
    * Contains the current codebook, few shot examples, and the subset of data to be coded.
@@ -91,61 +106,155 @@ export const useFullSuggestions = () => {
    * @returns A string prompt for the AI.
    */
   const constructUserPrompt = (passageId: number) => {
-    // Randomly choose up to 10 coded examples from the passages state
-    const fewShotExamples = passages
-      .filter(p => p.codeIds.length > 0) // take only coded passages
-      .sort(() => Math.random() - 0.5) // shuffle
-      .slice(0, 10) // take up to 10
-      .map(p => {
-        const codes_: string = p.codeIds.map(id => codes.find(c => c.id === id)?.code).filter(Boolean).join('", "');
-        return `{"passage": "${p.text}", "codes": [${codes_ ? `"${codes_}"` : ""}]}`;
+    // Ensure that there are at least 3 coded passages to use as few-shot examples
+    const codedPassages = passages.filter((p) => p.codeIds.length > 0);
+    if (codedPassages.length < MIN_FEW_SHOT_EXAMPLES) {
+      throw new Error(`InsufficientExamplesError: At least ${MIN_FEW_SHOT_EXAMPLES} coded passages are required for AI suggestions.`);
+    }
+
+    // Randomly choose up to 10 coded examples for few-shot examples
+    const fewShotExamples = codedPassages
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 10)
+      .map((p) => {
+        const codes_: string[] = p.codeIds
+          .map((id) => codes.find((c) => c.id === id)?.code)
+          .filter(Boolean) as string[];
+        
+        return JSON.stringify({
+          passage: p.text,
+          codes: codes_
+        });
       })
       .join(",\n");
 
     return `
         ## SUBSET TO CODE:
-        ${passages.find(p => p.id === passageId)?.text}
+        ${passages.find((p) => p.id === passageId)?.text}
 
-        CURRENT CODEBOOK:
-        ${Array.from(codebook).map((code) => `- ${code}`).join("\n")}
+        ## CURRENT CODEBOOK:
+        ${codebook.size === 0 
+          ? "(No codes yet - create new ones based on the research questions)" 
+          : Array.from(codebook).map((code) => `- ${code}`).join("\n")
+        }
 
-        FEW-SHOT EXAMPLES:
+        ## FEW-SHOT EXAMPLES:
         ${fewShotExamples}
         `;
   };
 
+  /** Creates a new AIsuggestion object.
+   *
+   * @param parentPassageId - The id of the parent passage.
+   * @param suggestedPassage - The text of the suggested passage.
+   * @param suggestedCodes - The suggested codes as an array of strings
+   * @throws Error if parent passage or sub-passage not found
+   * @returns AIsuggestion
+   */
+  const createAIsuggestion = (
+    id: number,
+    parentPassageId: number,
+    suggestedPassage: string,
+    suggestedCodes: string[]
+  ): AIsuggestion => {
+    const parentPassage = passages.find((p) => p.id === parentPassageId);
+    if (!parentPassage) {
+      throw new Error("ParentPassageNotFoundError");
+    }
 
-  const fuzzyMatchSuggestions = (suggestions: AIsuggestion[]): AIsuggestion[] => {
-    // TODO: Implement logic
-    // - the function should compare each suggested passage with existing passages in the context
-    // - if a suggested passage is very similar to an existing passage (e.g., Levenshtein distance below a threshold), consider it a match
-    // - if a passage does not match any existing passage, it should be removed from the suggestions
-    return suggestions;
+    const startIndex = parentPassage.text.indexOf(suggestedPassage);
+    if (startIndex === -1) {
+      throw new Error(
+        `SubPassageNotFoundError: Sub-passage "${suggestedPassage}" not found. Ensure that subpassages are exact substrings of the dataset being coded.`
+      );
+    }
+    const endIndex = startIndex + suggestedPassage.length;
+
+    const aiSuggestion: AIsuggestion = {
+      id: id,
+      parentPassageId: parentPassageId,
+      subPassageText: suggestedPassage,
+      startIndex: startIndex,
+      endIndex: endIndex,
+      suggestedCodes: suggestedCodes.join("; "), // Convert array to semicolon-separated string
+    };
+
+    return aiSuggestion;
   };
 
-
-  /**
-   * Converts the OpenAI response into an array of AiSuggestion objects.
+  /** Converts the OpenAI response into an array of AISuggestion objects.
    *
    * @param response - The OpenAI response object.
    * @returns AIsuggestions[]
    */
-  const parseAiResponse = (response: OpenAI.Responses.Response, parentPassageId: number): AIsuggestion[] => {
+  const parseAiResponse = (
+    response: OpenAI.Responses.Response,
+    parentPassageId: number
+  ): AIsuggestion[] => {
     const text = response.output_text.trim();
     const start = text.indexOf("[");
     const end = text.lastIndexOf("]") + 1;
 
     if (start === -1 || end === -1) {
-      throw new Error("INVALID_RESPONSE_FORMAT");
+      throw new Error(
+        "InvalidResponseFormatError: JSON array opening or closing tag not found. Ensure the response contains a JSON array with the exact format specified."
+      );
     }
 
     const jsonPart = text.slice(start, end);
-    let aiSuggestions: AIsuggestion[] = [];
-    
-    // TODO: finish implementation
+
+    // Parse JSON and validate array structure
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonPart);
+    } catch (jsonError) {
+      throw new Error(
+        "InvalidResponseFormatError: JSON parsing failed. Ensure the response is valid JSON."
+      );
+    }
+    if (!Array.isArray(parsed)) {
+      throw new Error(
+        "InvalidResponseFormatError: Ensure that the response contains a JSON array with the exact format specified."
+      );
+    }
+
+    // Validate each object has required fields
+    const validatedSuggestions = parsed.filter(
+      (
+        item: any
+      ): item is { subPassageText: string; suggestedCodes: string[] } => {
+        return (
+          item !== null &&
+          typeof item === "object" &&
+          typeof item.subPassageText === "string" &&
+          item.subPassageText.trim().length > 0 &&
+          Array.isArray(item.suggestedCodes) &&
+          item.suggestedCodes.every((code: any) => typeof code === "string")
+        );
+      }
+    );
+    if (parsed.length > 0 && validatedSuggestions.length === 0) {
+      throw new Error(
+        "InvalidResponseFormatError: Ensure that your suggested JSON objects contain exactly only the fields: 'subPassageText' and 'suggestedCodes'."
+      );
+    }
+
+    // Create an array of AIsuggestions
+    const aiSuggestions: AIsuggestion[] = [];
+    let currentSuggestionId = nextSuggestionId;
+    validatedSuggestions.forEach((item) => {
+      const aiSuggestion = createAIsuggestion(
+        currentSuggestionId++,
+        parentPassageId,
+        item.subPassageText,
+        item.suggestedCodes
+      );
+      aiSuggestions.push(aiSuggestion);
+    });
+    setNextSuggestionId(currentSuggestionId);
+
     return aiSuggestions;
   };
-
 
   /**
    * Fetches AI suggestions for an uncoded section of the data with automatic retry on recoverable errors.
@@ -158,41 +267,52 @@ export const useFullSuggestions = () => {
 
     while (attempt < MAX_RETRY_ATTEMPTS) {
       try {
-        let clarificationMessage: string | undefined;
-
         const aiSuggestions = await statefullyCallOpenAI(
-          apiKey, 
-          constructSystemPrompt(), 
+          apiKey,
+          constructSystemPrompt(),
           constructUserPrompt(passageId) + clarificationMessage,
-          CONVERSATION_KEY, // Add conversation key
           OPENAI_MODEL
         );
         const parsedSuggestions = parseAiResponse(aiSuggestions, passageId);
 
         // Success (no error caught) - update state and exit
         return parsedSuggestions;
-
       } catch (error) {
         // Parsing failed, retry with a clarifying message
         clarificationMessage = `
           ## IMPORTANT NOTE!
-          Your previous response was malformed! 
-          Please ensure the JSON is properly formatted with correct syntax. 
-          Please ensure each object in the array has the correct structure: 
-          {'passageText': '...', 'suggestedCodes': ['code1', 'code2']}.
-          Ensure you include only the JSON array in your response without any additional text.
+          Your previous response was invalid! Please provide valid suggestions.
+          ERROR MESSAGE: ${error instanceof Error ? error.message : ""}
         `;
-        console.warn(`AI suggestion attempt ${attempt + 1} failed. Retrying...`);
+        console.warn(
+          `AI suggestion attempt ${attempt + 1} failed with error: ${error instanceof Error ? error.message : ""}. Retrying...`
+        );
         attempt++;
 
+        // Error code 400: Another API call may be currently in progress for this conversation => try again after a short delay
+        if (
+          error instanceof Error && error.message.includes("400")
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 seconds before retrying
+          continue;
+        }
+
         // If the error is non-response format related, do not retry
-        if (error instanceof Error && error.message !== "INVALID_RESPONSE_FORMAT") {
-          console.error("Non-recoverable error encountered:", error); 
-          break; 
+        if (
+          error instanceof Error &&
+          !(
+            error.message.startsWith("InvalidResponseFormatError") ||
+            error.message.startsWith("ParentPassageNotFoundError") ||
+            error.message.startsWith("SubPassageNotFoundError")
+          )
+        ) {
+          console.error("Non-retryable error encountered:", error);
+          break;
         }
       }
     }
-    return [];  // Return empty array if all attempts fail
+    console.error(`Failed to get valid AI suggestions after ${MAX_RETRY_ATTEMPTS} attempts for passage ${passageId}`);
+    return []; // Return empty array if all attempts fail
   };
 
   return {

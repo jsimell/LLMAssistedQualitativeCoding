@@ -4,18 +4,28 @@ import ToggleSwitch from "../../ToggleSwitch";
 import Codebook from "./Codebook";
 import CodeBlob from "./CodeBlob";
 import { usePassageSegmenter } from "./hooks/usePassageSegmenter";
-import { useFullSuggestions } from "./hooks/useFullSuggestions";
+import SuggestionBlob from "./SuggestionBlob";
+import { useSuggestionActions } from "./hooks/useSuggestionActions";
+import { PlusIcon } from "@heroicons/react/24/solid";
+import { useCodeManager } from "./hooks/useCodeManager";
 
 const CodingCardContent = () => {
   // Local state for tracking the currently active passage and code input
   const [activeCodeId, setActiveCodeId] = useState<number | null>(null);
   const [activePassageId, setActivePassageId] = useState<number | null>(null);
+  const [showCodeSuggestionsFor, setShowCodeSuggestionsFor] = useState<number | null>(null);
 
   const { createNewPassage } = usePassageSegmenter({
-    activeCodeId,
     setActiveCodeId,
   });
 
+  const { addCode } = useCodeManager({ activeCodeId, setActiveCodeId });
+
+  const { handleAcceptSuggestion, handleEditSuggestion, handleRejectSuggestion } = useSuggestionActions({
+    activeCodeId,
+    setActiveCodeId,
+    setShowCodeSuggestionsFor,
+  });
 
   // Get global states and setters from the context
   const context = useContext(WorkflowContext);
@@ -29,7 +39,6 @@ const CodingCardContent = () => {
     setAiSuggestionsEnabled,
   } = context;
 
-
   // Moving to the next step should be allowed by default in this step
   useEffect(() => {
     setProceedAvailable(true);
@@ -41,11 +50,12 @@ const CodingCardContent = () => {
       setActivePassageId(null);
       return;
     } else {
-      const activePassage = context.codes.find((c) => c.id === activeCodeId)?.passageId;
+      const activePassage = context.codes.find(
+        (c) => c.id === activeCodeId
+      )?.passageId;
       setActivePassageId(activePassage !== undefined ? activePassage : null);
     }
   }, [activeCodeId]);
-
 
   // The purpose of the below is:
   // 1. ensure that the active code automatically gets focus when it is first created
@@ -67,8 +77,21 @@ const CodingCardContent = () => {
     // If the passage ends with a line break, a line break should be added after the last code blob
     const endsWithLineBreak = p.text.endsWith("\n");
 
+    const handleMouseEnter = () => {
+      if (p.codeIds?.length > 0) {
+        setShowCodeSuggestionsFor(p.id);
+      } else {
+        setShowCodeSuggestionsFor(null);
+      }
+    }
+
     return (
-      <span key={p.id}>
+      <span
+        key={p.id}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={() => setShowCodeSuggestionsFor(null)}
+        className="p-2 -mx-2" // Padding creates hover zone, negative margin prevents layout shift
+      >
         <span
           id={p.id.toString()}
           onClick={(e) => {
@@ -86,7 +109,7 @@ const CodingCardContent = () => {
                 ? "bg-tertiaryContainerHover underline decoration-onBackground"
                 : ""
             }
-              `}
+          `}
         >
           {p.text}
         </span>
@@ -94,13 +117,36 @@ const CodingCardContent = () => {
           p.codeIds.map((codeId) => (
             <CodeBlob
               key={codeId}
+              parentPassage={p}
               codeId={codeId}
-              hasTrailingBreak={endsWithLineBreak}
+              hasTrailingBreak={
+                endsWithLineBreak && showCodeSuggestionsFor !== p.id
+              }
               activeCodeId={activeCodeId}
               setActiveCodeId={setActiveCodeId}
               activeCodeRef={activeCodeRef}
             />
           ))}
+        {/* {p.codeIds?.length > 0 && (
+          <PlusIcon 
+            className="inline size-6 mb-[2px] text-gray-600 border-1 border-gray-400 rounded-full bg-tertiaryContainer hover:bg-tertiaryContainerHover" 
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent triggering parent onMouseUp event
+              addCode(p.id, "");
+              setActiveCodeId(p.id);
+            }}
+          />
+        )} */}
+        {showCodeSuggestionsFor === p.id && aiSuggestionsEnabled && p.aiSuggestions?.[0] && activePassageId !== p.id && (
+          <SuggestionBlob
+            passageId={p.id}
+            suggestionId={p.aiSuggestions[0].id}
+            hasTrailingBreak={endsWithLineBreak}
+            onAccept={handleAcceptSuggestion}
+            onEdit={handleEditSuggestion}
+            onReject={handleRejectSuggestion}
+          />
+        )}
       </span>
     );
   };

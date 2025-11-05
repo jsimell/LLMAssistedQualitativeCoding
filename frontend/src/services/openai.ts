@@ -1,93 +1,123 @@
 import OpenAI from "openai";
-
-// Store multiple conversations by key
-const conversations = new Map<string, {
-  conversation: OpenAI.Responses.Response.Conversation;
-  systemPrompt: string;
-}>();
+import { APICallQueue } from "./APICallQueue";
 
 let openai: OpenAI | null = null;
+let currentSystemPrompt: string | null = null;
+let currentConversation: OpenAI.Conversations.Conversation | null = null;
+let currentAPIKey: string | null = null;
+const apiCallQueue = new APICallQueue();
+  const acceptedModels = [
+    "gpt-5",
+    "gpt-5-mini",
+    "gpt-5-nano",
+    "gpt-4.1",
+    "gpt-4.1-mini",
+    "gpt-4.1-nano",
+    "gpt-4o",
+    "gpt-4o-mini",
+  ];
+
+// Used to prevent multiple simultaneous OpenAI conversation initializations
+let initPromise: Promise<OpenAI.Conversations.Conversation> | null = null;
+
+/** Helper for initializing or retrieving OpenAI client
+ *
+ * @param apiKey User inputted OpenAI API key
+ * @returns an openAI client instance
+ */
+const getOpenAIinstance = (apiKey: string): OpenAI => {
+  if (!openai || currentAPIKey !== apiKey) {
+    openai = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
+    currentAPIKey = apiKey;
+    currentConversation = null;
+    currentSystemPrompt = null;
+  }
+  return openai;
+}
 
 /**
  * Initializes or retrieves a conversation for a specific context.
  * @param apiKey The OpenAI API key
  * @param systemPrompt The system prompt for this conversation
- * @param conversationKey Unique key to identify this conversation (e.g., "full-coding", "passage-coding")
  */
-const initializeConversation = async (
-  apiKey: string, 
-  systemPrompt: string,
-  conversationKey: string
+export const initializeConversation = async (
+  apiKey: string,
+  systemPrompt: string
 ) => {
-  // Initialize OpenAI client if needed
-  if (!openai) {
-    openai = new OpenAI({apiKey: apiKey, dangerouslyAllowBrowser: true});
+  const openai = getOpenAIinstance(apiKey);
+
+  // If the system prompt has not changed, no need to re-initialize
+  if (currentSystemPrompt === systemPrompt && currentConversation) {
+    return currentConversation;
   }
 
-  // Check if conversation exists and system prompt matches
-  const existing = conversations.get(conversationKey);
-  if (existing && existing.systemPrompt === systemPrompt) {
-    return existing.conversation;
+  // If an init is already running, wait for it and reuse the result
+  if (initPromise) {
+    await initPromise;
+    return currentConversation;
   }
 
-  // Remove possible existing conversation that has an outdated system prompt
-  if (existing) {
-    conversations.delete(conversationKey);
+  // Create exactly once; others will await initPromise above
+  initPromise = apiCallQueue.enqueue(() =>
+    openai.conversations.create({
+      items: [{ type: "message", role: "developer", content: systemPrompt }],
+    })
+  );
+
+  try {
+    const conversation = await initPromise;
+    currentConversation = conversation;
+    currentSystemPrompt = systemPrompt;
+    console.log(`OpenAI conversation initialized. ID: ${conversation.id}`);
+    return conversation;
+  } finally {
+    initPromise = null;
   }
-
-  // Create new conversation
-  const conversation = await openai.conversations.create({
-    items: [
-      { type: "message", role: "developer", content: systemPrompt }
-    ],
-  });
-
-  if (!conversation) {
-    throw new Error('OpenAI initialization failed: No response received');
-  }
-
-  conversations.set(conversationKey, { conversation, systemPrompt });
-  console.log(`OpenAI conversation initialized for key: ${conversationKey}, id: ${conversation.id}`);
-  
-  return conversation;
 };
 
 /**
  * Calls the OpenAI API with the appropriate conversation context.
  */
 export const statefullyCallOpenAI = async (
-  apiKey: string, 
-  systemPrompt: string, 
+  apiKey: string,
+  systemPrompt: string,
   userPrompt: string,
-  conversationKey: string,
   model: string = "gpt-4-mini"
 ): Promise<OpenAI.Responses.Response> => {
-  const conversation = await initializeConversation(apiKey, systemPrompt, conversationKey);
+  const openai = getOpenAIinstance(apiKey);
 
-  if (!openai) {
-    throw new Error('OpenAI API call failed: OpenAI instance not initialized');
-  }
+  // Ensure conversation is initialized
+  await initializeConversation(apiKey, systemPrompt);
 
-  const acceptedModels = ["gpt-5", "gpt-5-mini", "gpt-5-nano", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4o", "gpt-4o-mini"];
   if (!acceptedModels.includes(model)) {
-    console.warn(`Model "${model}" is not in the list of accepted models. Defaulting to "gpt-4.1-mini".`);
+    console.warn(
+      `Model "${model}" is not in the list of accepted models. Defaulting to "gpt-4.1-mini".`
+    );
     model = "gpt-4.1-mini";
   }
 
-  const response = await openai.responses.create({
-    conversation: conversation.id,
-    model: model,
-    input: userPrompt,
+  const response = await apiCallQueue.enqueue(() => {
+    if (!currentConversation) {
+      throw new Error("OpenAI API call failed: Conversation uninitialized");
+    }
+    return openai.responses.create({
+      conversation: currentConversation.id,
+      model: model,
+      input: userPrompt,
+    });
   });
 
-  console.log("OpenAI stateful call completed. Response object:", response);
+  console.log(
+    "OpenAI stateful call completed. Response content:",
+    response.output_text
+  );
   return response;
 };
 
 /**
- * Calls OpenAI STATELESS (no conversation history) - faster, simpler.
+ * Calls OpenAI STATELESS (no conversation history) - faster, simpler, no need for initialization or API call queuing.
  * Use for: Quick, independent suggestions where context isn't cumulative.
- * 
+ *
  * Each call is independent - no history is maintained.
  */
 export const callOpenAIStateless = async (
@@ -95,14 +125,12 @@ export const callOpenAIStateless = async (
   prompt: string,
   model: string = "gpt-4o-mini"
 ): Promise<OpenAI.Responses.Response> => {
-  // Initialize OpenAI client if needed
-  if (!openai) {
-    openai = new OpenAI({apiKey: apiKey, dangerouslyAllowBrowser: true});
-  }
+  const openai = getOpenAIinstance(apiKey);
 
-  const acceptedModels = ["gpt-5", "gpt-5-mini", "gpt-5-nano", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4o", "gpt-4o-mini"];
   if (!acceptedModels.includes(model)) {
-    console.warn(`Model "${model}" is not in the list of accepted models. Defaulting to "gpt-4o-mini".`);
+    console.warn(
+      `Model "${model}" is not in the list of accepted models. Defaulting to "gpt-4o-mini".`
+    );
     model = "gpt-4o-mini";
   }
 
@@ -113,9 +141,9 @@ export const callOpenAIStateless = async (
   });
 
   if (!response) {
-    throw new Error('OpenAI stateless call failed: No response received');
+    throw new Error("OpenAI stateless call failed: No response received");
   }
 
-  console.log("OpenAI stateless call completed. Response object:", response);
+  console.log("OpenAI stateless call completed. Response content:", response.output_text);
   return response;
 };

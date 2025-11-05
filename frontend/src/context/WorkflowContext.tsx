@@ -83,7 +83,7 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   const [contextInfo, setContextInfo] = useState<string>("");
   const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
   const [rawData, setRawData] = useState<string>("");   // The text content of the uploaded file
-  const [aiSuggestionsEnabled, setAiSuggestionsEnabled] = useState<boolean>(false); // Global toggle
+  const [aiSuggestionsEnabled, setAiSuggestionsEnabled] = useState<boolean>(true); // Global toggle
   const [currentStep, setCurrentStep] = useState<number>(1);    // The current step of the workflow
   const [proceedAvailable, setProceedAvailable] = useState<boolean>(false);  // Defines whether or not user can currently proceed to the next step
   const [nextCodeId, setNextCodeId] = useState<number>(0);  // Next unique id for a new code
@@ -107,29 +107,6 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setCodebook(new Set(codes.map((c) => c.code)));
   }, [codes]);
-
-  // Debug: Log passages and their AI suggestions whenever passages change
-  useEffect(() => {
-    console.log("=== PASSAGES STATE UPDATE ===");
-    passages.forEach((passage) => {
-      console.log(`\nPassage ${passage.order})`);
-      console.log(`  Text: "${passage.text.substring(0, 50)}${passage.text.length > 50 ? '...' : ''}"`);
-      console.log(`  CodeIds: [${passage.codeIds.join(", ")}]`);
-      console.log(`  AI Suggestions (${passage.aiSuggestions?.length || 0}):`);
-
-      if (!passage.aiSuggestions || passage.aiSuggestions.length === 0) {
-        console.log(`    (none)`);
-      } else {
-        passage.aiSuggestions.forEach((suggestion) => {
-          console.log(`    - Suggestion ${suggestion.id}:`);
-          console.log(`      PassageText: "${suggestion.subPassageText.substring(0, 40)}..."`);
-          console.log(`      Range: [${suggestion.startIndex}, ${suggestion.endIndex}]`);
-          console.log(`      Codes: "${suggestion.suggestedCodes}"`);
-        });
-      }
-    });
-    console.log("==============================\n");
-  }, [passages]);
 
   // Combine all states + updaters into one object
   const value = {

@@ -78,7 +78,7 @@ const CodeBookRow = ({ code }: CodeBookRowProps) => {
         </span>
       )}
       <span>{`(${
-        codes.filter((c) => c.code.trim() === code.trim()).length
+        codes.filter((c) => (c.code ?? "").trim() === code.trim()).length
       })`}</span>
     </div>
   );

@@ -23,11 +23,11 @@ export const useCodeSuggestions = () => {
     const systemPrompt = `
       ## ROLE:
       You are a qualitative coding assistant for rapid code suggestions. 
-      Given a specific passage, its current codes, and coding context, suggest additional relevant codes for the passage.
+      Given a specific passage, its current codes, research questions, and additional context, suggest relevant codes for the passage.
 
       ## CONTEXT:
       - Passage to code: "${passage}"
-      - Current codes of the passage: [${existingCodes.join(", ")}]
+      - Existing codes of the passage: [${existingCodes.join(", ")}]
       - Research questions: "${researchQuestions}"
       - Additional context: "${contextInfo}"
       - Codebook: [${Array.from(codebook)
@@ -35,21 +35,28 @@ export const useCodeSuggestions = () => {
         .join(", ")}]
 
       ## BEHAVIOR:
-      - Your task is to suggest additional codes that would improve the accuracy of the coding.
-      - The maximum number of codes is 5, including existing ones.
-      - You CANNOT remove any of the existing codes. Your task is only to suggest ADDITIONAL codes.
-      - If there are no existing codes, suggest codes as if it were a new passage.
+      ${existingCodes.length === 0 
+        ? "- Your task is to code the passage from scratch using the codebook and research questions as guidance."
+        : ` 
+        - Your task is to suggest ADDITIONAL codes to complement the existing codes. 
+        - Do NOT suggest codes that are conceptually identical to any of the existing codes.
+        - The combination of existing and suggested codes should provide comprehensive coverage of the passage.
+        - Do NOT include existing codes in your suggestions.
+        `}
+      - Only suggest codes that provide meaningful value in terms of the research questions.
       - Reuse existing codes from the codebook whenever possible.
-      - Only create new codes if conceptually distinct, and even then, try to mimic the wording and style of the codebook.
-      - You must only suggest codes that are relevant in terms of the research questions.
+      - Only create a new code if it is conceptually distinct from all the codes in the codebook.
+      - If you create a new code, mimic the wording and style of the existing codes.
+      - Avoid overcoding; only suggest codes that add meaningful value to the existing ones.
       - If you can't think of any additional relevant codes, suggest no codes, and respond with an empty list [].
 
       ## RESPONSE FORMAT:
       - Output ONLY a JSON array of code strings. No explanations or any text outside the JSON array.
       - **IMPORTANT**: Codes MUST NOT contain semicolons (;). If punctuation is needed (should be rare), use a different delimiter.
-      - Example: ["existing code", "suggested code1", "suggested code2"]
+      - Example: ["suggested code1", "suggested code2"]
     `;
 
+  console.log("Existing codes used for stateless call:", existingCodes);
   let response = await callOpenAIStateless(apiKey, systemPrompt, OPENAI_MODEL);
   let parsedResponse;
 

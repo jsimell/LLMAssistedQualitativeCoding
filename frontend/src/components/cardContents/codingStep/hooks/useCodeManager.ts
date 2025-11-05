@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useRef, useEffect } from "react";
 import { Code, WorkflowContext } from "../../../../context/WorkflowContext";
 import { useAIsuggestionManager } from "./useAIsuggestionManager";
 
@@ -24,13 +24,65 @@ export const useCodeManager = ({
     throw new Error("useCodeManager must be used within a WorkflowProvider");
   }
 
-  const { codes, setCodes, passages, setPassages, nextCodeId, setNextCodeId } =
-    context;
-
+  const { codes, setCodes, passages, setPassages, nextCodeId, setNextCodeId } = context;
   const { updateSuggestionsForPassage } = useAIsuggestionManager();
 
-  /**
-   * Updates the value of a specific code.
+  // Track which passage needs suggestion update
+  const passageNeedingUpdateRef = useRef<number | null>(null);
+
+  // Takes care of updating suggestions for passages whose codes were changed
+  useEffect(() => {
+    const passageId = passageNeedingUpdateRef.current;
+    if (passageId !== null) {
+      updateSuggestionsForPassage(passageId);
+      passageNeedingUpdateRef.current = null; // Reset after update
+    }
+  }, [codes]);
+
+  /** Adds a new code to a passage.
+   * 
+   * @param passageId Id of the passage to which the code will be added
+   * @param codeValue The code content (can be a single code or multiple codes separated by ';')
+   */
+  const addCode = (passageId: number, codeValue: string) => {
+    const codeList = separateMultipleCodes(codeValue.trim());
+    let newCodeId = nextCodeId;
+
+    setCodes((prev) => {
+      const newCodes = codeList.map((code) => {
+        const codeObj: Code = {
+          id: newCodeId++,
+          passageId: passageId,
+          code: code,
+        };
+        return codeObj;
+      });
+      return [...prev, ...newCodes];
+    });
+
+    // Update passage to include new code IDs
+    const newCodeIds = Array.from(
+      { length: codeList.length },
+      (_, i) => nextCodeId + i
+    );
+    setPassages((prev) =>
+      prev.map((p) =>
+        p.id === passageId
+          ? { ...p, codeIds: [...p.codeIds, ...newCodeIds] }
+          : p
+      )
+    );
+
+    // Mark passage for AI suggestion update
+    passageNeedingUpdateRef.current = passageId;
+
+    // Update nextCodeId
+    setNextCodeId(newCodeId);
+  };
+
+
+  /** Updates the value of a specific code.
+   * 
    * @param id - the id of the code to be updated
    * @param newValue - the new value of the code
    */
@@ -86,8 +138,8 @@ export const useCodeManager = ({
     // Update nextCodeId
     setNextCodeId(newCodeId);
 
-    // Update the suggestions of the affected passage
-    updateSuggestionsForPassage(passageId);
+    // Mark passage for AI suggestion update
+    passageNeedingUpdateRef.current = passageId;
 
     // No code should be active after update -> set activeCodeId to null
     setActiveCodeId(null);
@@ -99,8 +151,6 @@ export const useCodeManager = ({
    * @param id - the id of the code to be deleted
    */
   const deleteCode = (id: number) => {
-    let shouldUpdateSuggestions = false;
-    let passageIdToUpdate: number | null = null;
 
     setPassages((prev) => {
       // 1. Find affected passage
@@ -113,17 +163,18 @@ export const useCodeManager = ({
         codeIds: affectedPassage.codeIds.filter((cid) => cid !== id),
       };
 
-      // 3. Check if passage still has codes
+      // 3. Mark the passage for AI suggestion update
+      passageNeedingUpdateRef.current = updatedPassage.id;
+
+      // 4. Check if passage still has codes
       if (updatedPassage.codeIds.length > 0) {
         // Still has codes - just update this passage
-        shouldUpdateSuggestions = true;
-        passageIdToUpdate = updatedPassage.id;
         return prev.map((p) =>
           p.id === updatedPassage.id ? updatedPassage : p
         );
       }
 
-      // 4. Otherwise: passage has no codes left and it may have to be merged with neighboring passages.
+      // 5. Otherwise: passage has no codes left and it may have to be merged with neighboring passages.
       // Find the neighbors of the passage based on order, to check whether they are empty and can be merged
       const prevPassage = prev.find(
         (p) => p.order === updatedPassage.order - 1
@@ -162,47 +213,11 @@ export const useCodeManager = ({
       return sorted.map((p, i) => ({ ...p, order: i }));
     });
 
-    // 5. Fire-and-forget AI suggestions update AFTER setPassages completes
-    if (shouldUpdateSuggestions && passageIdToUpdate !== null) {
-      updateSuggestionsForPassage(passageIdToUpdate);
-    }
-
     // 6. Remove code from codes array
     setCodes((prev) => prev.filter((c) => c.id !== id));
 
     // 7. No code should be active after deletion -> set activeCodeId to null
     setActiveCodeId(null);
-  };
-
-  /**
-   * Handles a keyboard event that occurs during code editing.
-   * @param e - the keyboard event that triggered the function call
-   */
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (activeCodeId === null) return;
-    if (!e.currentTarget) return;
-
-    // ENTER, TAB, ESCAPE: finalize editing of the current code
-    if (["Enter", "Tab", "Escape"].includes(e.key)) {
-      e.preventDefault(); // Prevents default behaviour of the tab button
-
-      // Get the code object being edited
-      const codeObject: Code | undefined = codes.find(
-        (c) => c.id === activeCodeId
-      );
-      if (!codeObject) return;
-
-      // Blur the input, which triggers onBlur, which calls updateCode, and deactivates the code
-      e.currentTarget.blur();
-
-      return;
-    }
-
-    // DELETE: delete the current code
-    if (e.key === "Delete") {
-      e.preventDefault();
-      deleteCode(activeCodeId);
-    }
   };
 
   const editAllInstancesOfCode = (oldValue: string, newValue: string) => {
@@ -221,5 +236,5 @@ export const useCodeManager = ({
     return codeList;
   };
 
-  return { updateCode, deleteCode, handleKeyDown, editAllInstancesOfCode };
+  return { addCode, updateCode, deleteCode, editAllInstancesOfCode };
 };

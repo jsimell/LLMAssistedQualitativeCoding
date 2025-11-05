@@ -1,10 +1,11 @@
 import { useState, useContext, useEffect, useRef } from "react";
-import { WorkflowContext } from "../../../context/WorkflowContext";
+import { Code, Passage, WorkflowContext } from "../../../context/WorkflowContext";
 import { useCodeManager } from "./hooks/useCodeManager";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 
 interface CodeBlobProps {
   codeId: number;
+  parentPassage: Passage;
   hasTrailingBreak: boolean;
   activeCodeId: number | null;
   setActiveCodeId: React.Dispatch<React.SetStateAction<number | null>>;
@@ -13,6 +14,7 @@ interface CodeBlobProps {
 
 const CodeBlob = ({
   codeId,
+  parentPassage,
   hasTrailingBreak,
   activeCodeId,
   setActiveCodeId,
@@ -21,21 +23,33 @@ const CodeBlob = ({
   const context = useContext(WorkflowContext)!; // Non-null assertion since parent already ensures WorkflowContext is provided
   const { codes, codebook } = context;
 
+  const [currentPlaceholder, setCurrentPlaceholder] = useState<string>("Type code...");
+
   const codeObject = codes.find((c) => c.id === codeId);
   if (!codeObject) return null;
   const [inputValue, setInputValue] = useState(codeObject.code);
 
-  const { deleteCode, updateCode, handleKeyDown } = useCodeManager({
+  const { deleteCode, updateCode } = useCodeManager({
     activeCodeId,
     setActiveCodeId,
   });
 
+  // Sync inputValue with global codes state when codes change (e.g., due to editAllInstancesOfCode)
   useEffect(() => {
-      const updatedCodeObject = codes.find((c) => c.id === codeId);
-      if (updatedCodeObject) {
-          setInputValue(updatedCodeObject.code);
-      }
+    const updatedCodeObject = codes.find((c) => c.id === codeId);
+    if (updatedCodeObject) {
+      setInputValue(updatedCodeObject.code);
+    }
   }, [codes, codeId]);
+
+  // Update the placeholder when the parent passage's AI suggestions change
+  useEffect(() => {
+    if (parentPassage.aiSuggestions.length > 0) {
+      setCurrentPlaceholder(parentPassage.aiSuggestions[0].suggestedCodes);
+    } else {
+      setCurrentPlaceholder("Type code...");
+    }
+  }, [parentPassage.aiSuggestions]);
 
   // Ensure that code blob input widths adjust to their content when component mounts and when codebook gets updated
   const inputRef = useRef<HTMLInputElement>(null);
@@ -62,6 +76,67 @@ const CodeBlob = ({
     target.style.width = `${target.scrollWidth + 4}px`;
   };
 
+    /**
+   * Handles a keyboard event that occurs during code editing.
+   * @param e - the keyboard event that triggered the function call
+   */
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (activeCodeId === null) return;
+    if (!e.currentTarget) return;
+
+    // A helper function to finalize editing of the current code
+    const finalizeEditing = () => {
+      const codeObject: Code | undefined = codes.find(
+        (c) => c.id === activeCodeId
+      );
+      if (!codeObject) return;
+      // Blur the input, which triggers onBlur, which calls updateCode, and deactivates the code
+      e.currentTarget.blur();
+      return;
+    }
+
+    // ENTER: finalize editing of the current code
+    if (e.key === "Enter") {
+      e.preventDefault();
+      finalizeEditing();
+      return;
+    }
+
+    // TAB: accept code suggestion (if any) or finalize editing, if no suggestion
+    if (e.key === "Tab") {
+      e.preventDefault();
+      if (currentPlaceholder && currentPlaceholder !== "Type code...") {
+        // Accept the suggestion into the input (not yet finalized)
+        setInputValue(currentPlaceholder);
+        return;
+      } else {
+        // No suggestion -> finalize editing
+        finalizeEditing();
+        return;
+      }
+    }
+
+    // ESCAPE: decline AI suggestion (if any) and keep editing, OR finalize editing if no suggestion
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (currentPlaceholder && currentPlaceholder !== "Type code...") {
+        // Decline the suggestion by clearing the placeholder
+        setCurrentPlaceholder("Type code...");
+        return;
+      } else {
+        // No suggestion -> finalize editing
+        finalizeEditing();
+        return;
+      }
+    }
+
+    // DELETE: delete the current code
+    if (e.key === "Delete") {
+      e.preventDefault();
+      deleteCode(activeCodeId);
+    }
+  };
+
   return (
     <span
       className={`inline-flex items-center w-fit px-2 mr-1
@@ -76,7 +151,7 @@ const CodeBlob = ({
       <input
         value={inputValue}
         size={codeObject.code ? Math.max(codeObject.code.length + 1, 8) : 8}
-        placeholder="Type code..."
+        placeholder={parentPassage.aiSuggestions[0]?.suggestedCodes || "Type code..."}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           setInputValue(e.currentTarget.value);
           handleCodeBlobSizing(e);
