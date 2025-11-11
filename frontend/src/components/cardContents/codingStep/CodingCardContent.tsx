@@ -162,7 +162,12 @@ const CodingCardContent = () => {
   return (
     <div className="flex w-full gap-7">
       <div
-        onMouseUp={createNewPassage}
+        onMouseUp={() => {
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            createNewPassage(selection.getRangeAt(0));
+          }
+        }}
         className="flex-1 rounded-xl border-1 border-outline p-8 text-onBackground text-base whitespace-pre-wrap"
       >
         {passages.map((p) => renderPassage(p))}

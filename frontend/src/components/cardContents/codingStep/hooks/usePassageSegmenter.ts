@@ -101,20 +101,14 @@ export const usePassageSegmenter = ({
    * It creates a new passage based on the highlighted text, and adds an empty code linked to it.
    * Ensures that no overlapping highlights occur.
    */
-  const createNewPassage = () => {
-    // 1. Get selection from actual user selection, or from provided highlightedText (used when accepting highlight suggestions)
-    const selection = window.getSelection();
-    if (!selection) {
-      console.log("Selection undefined");
-      return;
-    }
+  const createNewPassage = (range: Range) => {
     // If there's no real range (i.e. not a highlight, just a click), do nothing.
-    if (selection.isCollapsed) {
+    if (range.collapsed) {
       return;
     }
-    // Save relevant information about the selection
-    const startNode = selection.anchorNode;
-    const endNode = selection.focusNode;
+    // Save relevant information about the range
+    const startNode = range.startContainer;
+    const endNode = range.endContainer;
     if (!startNode || !endNode) {
       console.log("Start or end node undefined");
       return;
@@ -151,10 +145,8 @@ export const usePassageSegmenter = ({
 
     // 3. Split passage text
     // First, normalize offsets (selection can be backward)
-    const anchorOffset = selection.anchorOffset;
-    const focusOffset = selection.focusOffset;
-    const startOffset = Math.min(anchorOffset, focusOffset);
-    const endOffset = Math.max(anchorOffset, focusOffset);
+    const startOffset = range.startOffset;
+    const endOffset = range.endOffset;
     // Get the splitted passages
     const beforeHighlighted = sourceText.slice(0, startOffset);
     const highlighted = sourceText.slice(startOffset, endOffset);
