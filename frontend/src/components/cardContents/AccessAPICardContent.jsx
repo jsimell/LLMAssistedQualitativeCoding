@@ -6,7 +6,7 @@ import InfoBox from "../InfoBox";
 import { validateApiKey } from "../../services/validateApiKey";
 
 const AccessAPICardContent = () => {
-  const [currentInput, setCurrentInput] = useState("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");
+  const [currentInput, setCurrentInput] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isValid, setIsValid] = useState(false);
