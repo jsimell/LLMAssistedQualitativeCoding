@@ -1,10 +1,10 @@
 import { useContext, useRef, useEffect } from "react";
-import { Code, Passage, WorkflowContext } from "../../../../context/WorkflowContext";
+import { Code, CodeId, Passage, PassageId, WorkflowContext } from "../../../../context/WorkflowContext";
 import { useCodeSuggestions } from "./apiCommunication/useCodeSuggestions";
 import { useHighlightSuggestions } from "./apiCommunication/useHighlightSuggestions";
 
 interface UseCodeManagerProps {
-  setActiveCodeId: React.Dispatch<React.SetStateAction<number | null>>;
+  setActiveCodeId: React.Dispatch<React.SetStateAction<CodeId | null>>;
 }
 
 /**
@@ -23,12 +23,12 @@ export const useCodeManager = ({
     throw new Error("useCodeManager must be used within a WorkflowProvider");
   }
 
-  const { codes, setCodes, passages, setPassages, nextCodeId, setNextCodeId } = context;
+  const { codes, setCodes, passages, setPassages, nextCodeIdNumber, setNextCodeIdNumber } = context;
   const { getCodeSuggestions } = useCodeSuggestions();
   const { getNextHighlightSuggestion } = useHighlightSuggestions();
 
   // Track which passage needs suggestion update
-  const fetchSuggestionsForPassageId = useRef<number | null>(null);
+  const fetchSuggestionsForPassageId = useRef<string | null>(null);
 
   // Update code suggestions for passages that need it when codes state changes
   useEffect(() => {
@@ -106,12 +106,16 @@ export const useCodeManager = ({
       codeList = [""];
     }
     
-    let newCodeId = nextCodeId;
+    let newCodeIdNumber = nextCodeIdNumber; // Extract numeric part
+    const getNextCodeId = () => {
+      const id = `code-${newCodeIdNumber++}` as CodeId;
+      return id;
+    }
 
     setCodes((prev) => {
       const newCodes = codeList.map((code) => {
         const codeObj: Code = {
-          id: newCodeId++,
+          id: getNextCodeId(),
           passageId: passage.id,
           code: code,
         };
@@ -121,10 +125,10 @@ export const useCodeManager = ({
     });
 
     // Update passage to include new code IDs
-    const newCodeIds = Array.from(
-      { length: codeList.length },
-      (_, i) => nextCodeId + i
-    );
+    const newCodeIds: CodeId[] = [];
+    for (let i = 0; i < codeList.length; i++) {
+      newCodeIds.push(getNextCodeId());
+    }
     setPassages((prev) =>
       prev.map((p) =>
         p.id === passage.id
@@ -137,7 +141,7 @@ export const useCodeManager = ({
     fetchSuggestionsForPassageId.current = passage.id;
 
     // Update nextCodeId
-    setNextCodeId(newCodeId);
+    setNextCodeIdNumber(newCodeIdNumber);
 
     // Set the last added code as active
     setActiveCodeId(newCodeIds[newCodeIds.length - 1]);
@@ -150,9 +154,14 @@ export const useCodeManager = ({
    * @param id - the id of the code to be updated
    * @param newValue - the new value of the code
    */
-  const updateCode = (id: number, newValue: string) => {
+  const updateCode = (id: CodeId, newValue: string) => {
     const codeList = separateMultipleCodes(newValue.trim());
-    let newCodeId = nextCodeId;
+
+    let newCodeIdNumber = nextCodeIdNumber;
+    const getNextCodeId = () => {
+      const id = `code-${newCodeIdNumber++}` as CodeId;
+      return id;
+    }
 
     // Edge case: if no change, do nothing
     const existingCode = codes.find((c) => c.id === id);
@@ -169,12 +178,12 @@ export const useCodeManager = ({
 
     const codeObject = codes.find((c) => c.id === id);
     if (!codeObject) return;
-    const passageId = codeObject.passageId;
+    const passageId: PassageId = codeObject.passageId;
 
     // Collect new code IDs that will be created (only for codes beyond the first)
-    const newCodeIds: number[] = [];
+    const newCodeIds: CodeId[] = [];
     for (let i = 1; i < codeList.length; i++) {
-      newCodeIds.push(newCodeId++);
+      newCodeIds.push(getNextCodeId());
     }
 
     // Update the codes state
@@ -209,7 +218,7 @@ export const useCodeManager = ({
     );
 
     // Update nextCodeId
-    setNextCodeId(newCodeId);
+    setNextCodeIdNumber(newCodeIdNumber);
 
     // Mark passage for AI suggestion update
     fetchSuggestionsForPassageId.current = passageId;
@@ -223,7 +232,7 @@ export const useCodeManager = ({
    * Deletes a code.
    * @param id - the id of the code to be deleted
    */
-  const deleteCode = (id: number) => {
+  const deleteCode = (id: CodeId) => {
 
     setPassages((prev) => {
       // 1. Find affected passage

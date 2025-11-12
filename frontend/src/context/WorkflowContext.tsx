@@ -1,8 +1,11 @@
 import React, { createContext, useState, useEffect } from "react";
 
+export type PassageId = `passage-${number}`;
+export type CodeId = `code-${number}`;
+
 // Base properties shared by all passages
 interface BasePassage {
-  id: number;
+  id: PassageId; // A unique id consisting of "passage-" + an unique number (obtained from nextPassageId)
   order: number;
   text: string;
 }
@@ -18,7 +21,7 @@ interface UnhighlightedPassage extends BasePassage {
 // Highlighted passage (has codes and AI suggestions)
 interface HighlightedPassage extends BasePassage {
   isHighlighted: true;
-  codeIds: number[];
+  codeIds: CodeId[];
   codeSuggestions: string[];
   nextHighlightSuggestion: null;
 }
@@ -27,8 +30,8 @@ interface HighlightedPassage extends BasePassage {
 export type Passage = UnhighlightedPassage | HighlightedPassage;
 
 export interface Code {
-  id: number; // A unique id
-  passageId: number;
+  id: CodeId; // A unique id consisting of "code-" + an unique number (obtained from nextCodeId)
+  passageId: PassageId; // The id of the passage this code belongs to
   code: string;
 }
 
@@ -76,14 +79,11 @@ export interface WorkflowContextType {
   codes: Code[];
   setCodes: Setter<Code[]>;
 
-  nextCodeId: number;
-  setNextCodeId: Setter<number>;
+  nextCodeIdNumber: number;
+  setNextCodeIdNumber: Setter<number>;
 
-  nextPassageId: number;
-  setNextPassageId: Setter<number>;
-
-  nextSuggestionId: number;
-  setNextSuggestionId: Setter<number>;
+  nextPassageIdNumber: number;
+  setNextPassageIdNumber: Setter<number>;
 
   codebook: Set<string>;
   setCodebook: Setter<Set<string>>;
@@ -103,9 +103,8 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   const [aiSuggestionsEnabled, setAiSuggestionsEnabled] = useState<boolean>(true); // Global toggle
   const [currentStep, setCurrentStep] = useState<number>(1);    // The current step of the workflow
   const [proceedAvailable, setProceedAvailable] = useState<boolean>(false);  // Defines whether or not user can currently proceed to the next step
-  const [nextCodeId, setNextCodeId] = useState<number>(0);  // Next unique id for a new code
-  const [nextPassageId, setNextPassageId] = useState<number>(0);   // Next unique id for a new passage
-  const [nextSuggestionId, setNextSuggestionId] = useState<number>(0); // Next unique id for a new AI suggestion
+  const [nextCodeIdNumber, setNextCodeIdNumber] = useState<number>(0);  // Next unique id for a new code
+  const [nextPassageIdNumber, setNextPassageIdNumber] = useState<number>(0);   // Next unique id for a new passage
   const [passages, setPassages] = useState<Passage[]>([]);  // The passages of the data coding phase
   const [codes, setCodes] = useState<Code[]>([]);  // The codes of the data coding phase (contains all code instances, even duplicates)
   const [codebook, setCodebook] = useState<Set<string>>(new Set()) // Contains all unique codes
@@ -114,9 +113,9 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   // Set the raw data as the first passage once it is uploaded
   useEffect(() => {
     if (rawData) {
-      setNextPassageId(prevId => {
-        setPassages([{ id: prevId, order: 0, text: rawData, isHighlighted: false, codeIds: [], codeSuggestions: [], nextHighlightSuggestion: null }]);
-        return prevId + 1;
+      setNextPassageIdNumber(prev => {
+        setPassages([{ id: `passage-${prev}`, order: 0, text: rawData, isHighlighted: false, codeIds: [], codeSuggestions: [], nextHighlightSuggestion: null }]);
+        return prev + 1;
       })
     };
   }, [rawData]);
@@ -138,10 +137,9 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
     fileInfo, setFileInfo,
     passages, setPassages,
     codes, setCodes,
-    nextCodeId, setNextCodeId,
-    nextPassageId, setNextPassageId,
+    nextCodeIdNumber, setNextCodeIdNumber,
+    nextPassageIdNumber, setNextPassageIdNumber,
     codebook, setCodebook,
-    nextSuggestionId, setNextSuggestionId,
     contextWindowSize, setContextWindowSize,
   };
 

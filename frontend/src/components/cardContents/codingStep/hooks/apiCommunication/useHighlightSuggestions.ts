@@ -40,7 +40,7 @@ export const useHighlightSuggestions = () => {
       Your primary task is to identify and code the next relevant passage from the provided uncoded context window.
 
       ## CONTEXT WINDOW:
-      "${passage.order !== 0 && "..."}${passage.text.slice(0, 1000)}..."
+      "${passage.order !== 0  ? "..." : ""}${passage.text.slice(0, 1000)}..."
 
       ## CONTEXT INFORMATION:
       **Research questions:** ${researchQuestions}
@@ -75,6 +75,7 @@ export const useHighlightSuggestions = () => {
       - Do NOT include explanations or text outside the returned object.
       - Do not indicate truncation in any way (e.g. "..." in the passage). The passage must be exact.
       - The suggested code MUST NOT include semicolons (;). If punctuation is needed, use a different delimiter.
+      - Start the codes with a lowercase or an uppercase letter based on the style that is used in the codebook.
       - The passage must be an exact, case-sensitive substring of the context window, including whitespace and punctuation.
       
       Example: coding a passage:

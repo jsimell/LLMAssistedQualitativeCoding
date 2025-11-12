@@ -11,7 +11,7 @@ export const useCodeSuggestions = () => {
       "useCodeSuggestions must be used within a WorkflowProvider"
     );
   }
-  const { researchQuestions, contextInfo, codebook, apiKey, passages, codes } = context;
+  const { researchQuestions, contextInfo, codebook, apiKey, passages, contextWindowSize } = context;
 
   /**
    * Gets code suggestions for a specific passage based on its existing codes and context.
@@ -25,7 +25,7 @@ export const useCodeSuggestions = () => {
       You are a qualitative coding assistant for rapid code suggestions. 
       Given a specific passage, and the below context, suggest relevant codes for the passage.
 
-      ## CONTEXT:
+      ## CONTEXT INFORMATION
 
       ### TARGET PASSAGE TO CODE:
       "${passage.text}"
@@ -94,20 +94,22 @@ export const useCodeSuggestions = () => {
    * @param contextSize Number of characters to include before and after the passage
    * @returns A text window that contains the passage and its surrounding context
    */
-  const getTargetPassageWithContext = (passage: Passage, contextSize: number = 250) => {
+  const getTargetPassageWithContext = (passage: Passage) => {
     const passageOrder = passage.order;
     let precedingText = "";
     let followingText = "";
+
+    const contextSize = contextWindowSize ?? 500;
 
     // Collect preceding passages
     for (let i = passageOrder - 1; i >= 0; i--) {
       const p = passages.find((p) => p.order === i);
       if (!p) break;
-      if (precedingText.length + p.text.length <= contextSize) {
+      if (precedingText.length + p.text.length <= contextSize / 2) {
         precedingText = p.text + precedingText;
       } else {
         const remainingChars = contextSize - precedingText.length;
-        precedingText = "..." + p.text.slice(-remainingChars) + precedingText; // Add "..." to indicate truncation
+        precedingText = (i !== -1 ? "..." : "") + p.text.slice(-remainingChars) + precedingText; // Add "..." to indicate truncation
         break;
       }
     }
@@ -120,7 +122,7 @@ export const useCodeSuggestions = () => {
           followingText += p.text;
         } else {
           const remainingChars = contextSize - followingText.length;
-          followingText += p.text.slice(0, remainingChars) + "..."; // Add "..." to indicate truncation
+          followingText += p.text.slice(0, remainingChars) + (j !== passages.length - 1 ? "..." : ""); // Add "..." to indicate truncation
           break;
         }
       }
@@ -139,7 +141,7 @@ export const useCodeSuggestions = () => {
       Based on the below context, suggest a large set of relevant codes for a specific passage.
       The objective is to maximize the possibility that the user finds a suitable code while typing.
 
-      ## CONTEXT:
+      ## CONTEXT INFORMATION
 
       ### TARGET PASSAGE TO CODE:
       "${passage.text}"

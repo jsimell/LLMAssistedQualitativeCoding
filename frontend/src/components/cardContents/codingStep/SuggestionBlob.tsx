@@ -2,7 +2,7 @@ import { Passage } from "../../../context/WorkflowContext";
 
 interface SuggestionBlobProps {
   passage: Passage;
-  onClick: () => void;
+  onClick: (e: any) => void
 }
 
 const SuggestionBlob = ({

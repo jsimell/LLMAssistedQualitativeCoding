@@ -1,7 +1,9 @@
 import { useState, useContext, useEffect, useRef } from "react";
 import {
   Code,
+  CodeId,
   Passage,
+  PassageId,
   WorkflowContext,
 } from "../../../context/WorkflowContext";
 import { useCodeManager } from "./hooks/useCodeManager";
@@ -9,11 +11,11 @@ import { XMarkIcon } from "@heroicons/react/24/solid";
 import { useCodeSuggestions } from "./hooks/apiCommunication/useCodeSuggestions";
 
 interface CodeBlobProps {
-  codeId: number;
+  codeId: CodeId;
   parentPassage: Passage;
-  activeCodeId: number | null;
-  setActiveCodeId: React.Dispatch<React.SetStateAction<number | null>>;
-  setActivePassageId: React.Dispatch<React.SetStateAction<number | null>>;
+  activeCodeId: CodeId | null;
+  setActiveCodeId: React.Dispatch<React.SetStateAction<CodeId | null>>;
+  setActivePassageId: React.Dispatch<React.SetStateAction<PassageId | null>>;
   activeCodeRef: React.RefObject<HTMLSpanElement | null>;
 }
 
@@ -38,7 +40,6 @@ const CodeBlob = ({
   const codeObject = codes.find((c) => c.id === codeId);
   if (!codeObject) return null;
   const [inputValue, setInputValue] = useState(codeObject.code);
-    useState<boolean>(false);
     
   // REFS
   const currentlyEnteredValueRef = useRef(inputValue);
@@ -117,7 +118,7 @@ const CodeBlob = ({
     if (inputValue.trim().length === 0) fetchSuggestions();
   }, [activeCodeId]);
 
-  // Ensure cursor is always at the end of the current input
+  // Ensure cursor is placed to the end of the input, when activating the code blob
   useEffect(() => {
     if (activeCodeId === codeId && activeCodeRef.current) {
       // Move cursor to end after inputValue updates
@@ -133,7 +134,7 @@ const CodeBlob = ({
         sel?.addRange(range);
       }
     }
-  }, [inputValue, activeCodeId, codeId]);
+  }, [activeCodeId, codeId]);
 
 
   /**

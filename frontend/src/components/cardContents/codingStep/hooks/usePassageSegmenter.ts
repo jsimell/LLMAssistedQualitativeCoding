@@ -1,10 +1,10 @@
 import { useContext, useEffect, useRef } from "react";
-import { Passage, WorkflowContext } from "../../../../context/WorkflowContext";
+import { CodeId, Passage, PassageId, WorkflowContext } from "../../../../context/WorkflowContext";
 import { useCodeSuggestions } from "./apiCommunication/useCodeSuggestions";
 import { useHighlightSuggestions } from "./apiCommunication/useHighlightSuggestions";
 
 interface UsePassageSegmenterProps {
-  setActiveCodeId: React.Dispatch<React.SetStateAction<number | null>>;
+  setActiveCodeId: React.Dispatch<React.SetStateAction<CodeId | null>>;
 }
 
 /**
@@ -25,10 +25,10 @@ export const usePassageSegmenter = ({
     setCodes,
     passages,
     setPassages,
-    nextCodeId,
-    setNextCodeId,
-    nextPassageId,
-    setNextPassageId,
+    nextCodeIdNumber,
+    setNextCodeIdNumber,
+    nextPassageIdNumber,
+    setNextPassageIdNumber,
   } = context;
 
   const { getNextHighlightSuggestion } = useHighlightSuggestions();
@@ -90,18 +90,18 @@ export const usePassageSegmenter = ({
   /**
    * Helper to check if two codeId arrays are equal
    */
-  const areCodeIdsEqual = (ids1: number[], ids2: number[]): boolean => {
+  const areCodeIdsEqual = (ids1: string[], ids2: string[]): boolean => {
     if (ids1.length !== ids2.length) return false;
     return ids1.every((id, index) => id === ids2[index]);
   };
 
-  
-  /**
-   * This function gets called when the user highlights a passage in the coding interface.
-   * It creates a new passage based on the highlighted text, and adds an empty code linked to it.
-   * Ensures that no overlapping highlights occur.
+
+  /** 
+   * Creates a new passage based on the provided range selection.
+   * Ensures no overlapping passages are created
+   * @param range The range selection from which to create a new passage
    */
-  const createNewPassage = (range: Range) => {
+  const createNewPassage = (range: Range, initialCodes: string[] = []) => {
     // If there's no real range (i.e. not a highlight, just a click), do nothing.
     if (range.collapsed) {
       return;
@@ -116,7 +116,7 @@ export const usePassageSegmenter = ({
     const sourceText = startNode.textContent;
     const sourceId =
       startNode.parentNode instanceof HTMLElement
-        ? Number(startNode.parentNode.id) // The id element contains the order of the passage
+        ? startNode.parentNode.id // The id element contains the order of the passage
         : undefined;
     const sourcePassage = passages.find((p) => p.id === sourceId);
     if (!sourcePassage) {
@@ -126,7 +126,6 @@ export const usePassageSegmenter = ({
     const sourceOrder = sourcePassage?.order;
     if (
       !sourceText ||
-      sourceId === undefined ||
       sourceOrder === undefined
     ) {
       console.log("SourceText, passage, its id, or order undefined.");
@@ -159,11 +158,16 @@ export const usePassageSegmenter = ({
     }
 
     // 4. Get next available code and passage ids
-    const newCodeId = nextCodeId;
-    let newPassageId = nextPassageId;
+    const newCodeIdNumber = nextCodeIdNumber;
+    const newCodeId: CodeId = `code-${newCodeIdNumber}`;
+    let newPassageIdNumber = nextPassageIdNumber; // Extract numeric part
+    const getNextPassageId = () => {
+      const id = `passage-${newPassageIdNumber++}` as PassageId;
+      return id;
+    }
 
     // 5. Create a variable for storing the information on which passage the new code is linked to
-    let passageIdOfNewCode: number | null = null;
+    let passageIdOfNewCode: string | null = null;
 
     // 5. Create new passages depending on edge cases
     let newPassages: Passage[] = [];
@@ -186,7 +190,7 @@ export const usePassageSegmenter = ({
     else if (beforeHighlighted.length === 0) {
       newPassages = [
         {
-          id: newPassageId++,
+          id: getNextPassageId(),
           order: sourceOrder,
           text: highlighted,
           isHighlighted: true,
@@ -195,7 +199,7 @@ export const usePassageSegmenter = ({
           nextHighlightSuggestion: null,
         },
         {
-          id: newPassageId++,
+          id: getNextPassageId(),
           order: sourceOrder + 1,
           text: afterHighlighted,
           isHighlighted: false,
@@ -204,14 +208,14 @@ export const usePassageSegmenter = ({
           nextHighlightSuggestion: null,
         },
       ];
-      passageIdOfNewCode = newPassageId - 2;
+      passageIdOfNewCode = `passage-${newPassageIdNumber - 2}`;
     }
     // Case C: highlight at end, or right before another highlighted passage:
     //     new passages = [beforeHighlighted without codes, highlighted with newCodeId in codeIds]
     else if (afterHighlighted.length === 0) {
       newPassages = [
         {
-          id: newPassageId++,
+          id: getNextPassageId(),
           order: sourceOrder,
           text: beforeHighlighted,
           isHighlighted: false,
@@ -220,7 +224,7 @@ export const usePassageSegmenter = ({
           nextHighlightSuggestion: null,
         },
         {
-          id: newPassageId++,
+          id: getNextPassageId(),
           order: sourceOrder + 1,
           text: highlighted,
           isHighlighted: true,
@@ -229,14 +233,14 @@ export const usePassageSegmenter = ({
           nextHighlightSuggestion: null,
         },
       ];
-      passageIdOfNewCode = newPassageId - 1;
+      passageIdOfNewCode = `passage-${newPassageIdNumber - 1}`;
     }
     // Case D: highlight in the middle of an unhighlighted passage:
     //     new passages = [beforeHighlighted, highlighted with newCodeId in codeIds, afterHighlighted]
     else {
       newPassages = [
         {
-          id: newPassageId++,
+          id: getNextPassageId(),
           order: sourceOrder,
           text: beforeHighlighted,
           isHighlighted: false,
@@ -245,7 +249,7 @@ export const usePassageSegmenter = ({
           nextHighlightSuggestion: null,
         },
         {
-          id: newPassageId++,
+          id: getNextPassageId(),
           order: sourceOrder + 1,
           text: highlighted,
           isHighlighted: true,
@@ -254,7 +258,7 @@ export const usePassageSegmenter = ({
           nextHighlightSuggestion: null,
         },
         {
-          id: newPassageId++,
+          id: getNextPassageId(),
           order: sourceOrder + 2,
           text: afterHighlighted,
           isHighlighted: false,
@@ -263,12 +267,12 @@ export const usePassageSegmenter = ({
           nextHighlightSuggestion: null,
         },
       ];
-      passageIdOfNewCode = newPassageId - 2;
+      passageIdOfNewCode = `passage-${newPassageIdNumber - 2}`;
     }
 
     // 6. Update the nextId states
-    setNextCodeId(newCodeId + 1);
-    setNextPassageId(newPassageId);
+    setNextCodeIdNumber(newCodeIdNumber + 1);
+    setNextPassageIdNumber(newPassageIdNumber);
 
     // 7. Update passages state
     setPassages((prev) => {
@@ -292,7 +296,7 @@ export const usePassageSegmenter = ({
     // 8. Add the new code to the codes state and the codebook
     setCodes((prev) => [
       ...prev,
-      { id: newCodeId, passageId: passageIdOfNewCode, code: "" },
+      { id: newCodeId as CodeId, passageId: passageIdOfNewCode as PassageId, code: initialCodes.join("; ") },
     ]);
 
     // 9. Add new passages to appropriate suggestion queues

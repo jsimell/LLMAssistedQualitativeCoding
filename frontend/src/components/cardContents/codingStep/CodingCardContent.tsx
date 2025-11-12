@@ -1,24 +1,24 @@
 import { useState, useContext, useEffect, useRef } from "react";
-import { Passage, WorkflowContext } from "../../../context/WorkflowContext";
+import { CodeId, Passage, PassageId, WorkflowContext } from "../../../context/WorkflowContext";
 import ToggleSwitch from "../../ToggleSwitch";
 import Codebook from "./Codebook";
 import CodeBlob from "./CodeBlob";
 import { usePassageSegmenter } from "./hooks/usePassageSegmenter";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/solid";
-import { useCodeManager } from "./hooks/useCodeManager";
 import SuggestionBlob from "./SuggestionBlob";
 
 const CodingCardContent = () => {
   // Local state for tracking the currently active passage and code input
-  const [activeCodeId, setActiveCodeId] = useState<number | null>(null);
-  const [activePassageId, setActivePassageId] = useState<number | null>(null);
-  const [hoveredPassageId, setHoveredPassageId] = useState<number | null>(null);
+  const [activeCodeId, setActiveCodeId] = useState<CodeId | null>(null);
+  const [activePassageId, setActivePassageId] = useState<PassageId | null>(null);
+  const [hoveredPassageId, setHoveredPassageId] = useState<PassageId | null>(null);
 
   const { createNewPassage } = usePassageSegmenter({
     setActiveCodeId,
   });
 
-  const { addCode } = useCodeManager({ setActiveCodeId });
+  const visibleHighlightSuggestionRef = useRef<HTMLSpanElement>(null);
+  const activeCodeRef = useRef<HTMLSpanElement>(null);
 
   // Get global states and setters from the context
   const context = useContext(WorkflowContext);
@@ -56,7 +56,6 @@ const CodingCardContent = () => {
   // 1. ensure that the active code automatically gets focus when it is first created
   // 2. ensure that the codebook gets updated when activeCodeId changes (i.e., when user clicks on a code blob, or outside to defocus)
   //    This removes the need to use the onBlur event on the editable span of the code blob.
-  const activeCodeRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     if (activeCodeRef.current) {
       activeCodeRef.current.focus();
@@ -69,9 +68,6 @@ const CodingCardContent = () => {
    * @returns - the jsx code of the passage
    */
   const renderPassage = (p: Passage) => {
-    // If the passage ends with a line break, a line break should be added after the last code blob
-    const endsWithLineBreak = p.text.endsWith("\n");
-
     return (
       <span 
         key={p.id}
@@ -83,7 +79,7 @@ const CodingCardContent = () => {
       >
         <span>
           <span
-            id={p.id.toString()}
+            id={p.id}
             onClick={(e) => {
               e.stopPropagation(); // Prevent triggering parent onMouseUp event
               if (p.isHighlighted && p.codeIds.length > 0)
@@ -125,39 +121,99 @@ const CodingCardContent = () => {
     );
   };
 
-  /** Renders the text content of a passage, with highlight suggestion set to show on hover if available
-   * 
+
+  /**
+   * Handles accepting a highlight suggestion when it is clicked.
+   * @param passage - the passage for which to accept the suggestion
+   */
+  const handleAcceptSuggestion = (
+    e: React.MouseEvent<HTMLSpanElement, MouseEvent>,
+    parentPassage: Passage
+  ) => {
+    e.stopPropagation();
+
+    const suggestionText = parentPassage.nextHighlightSuggestion?.passage;
+    if (!suggestionText) return;
+
+    const startIdx = parentPassage.text.indexOf(suggestionText);
+    if (startIdx === -1) return;
+    const endIdx = startIdx + suggestionText.length;
+
+    // 1) Hide suggestion so the passage DOM becomes a single text node again
+    setHoveredPassageId(null);
+    setActivePassageId(null);
+
+    // 2) Next frame, build a Range on the plain text node and call createNewPassage
+    requestAnimationFrame(() => {
+      const root = document.getElementById(parentPassage.id);
+      const textNode = root?.firstChild as Text | null;
+
+      if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+        const range = document.createRange();
+        range.setStart(textNode, startIdx);
+        range.setEnd(textNode, endIdx);
+        createNewPassage(range, [parentPassage.nextHighlightSuggestion!.code]);
+      } else {
+        // Fallback: select full contents if text node not available
+        if (root) {
+          const range = document.createRange();
+          range.selectNodeContents(root);
+          createNewPassage(range);
+        }
+      }
+    });
+  };
+
+
+  /** 
+   * Renders the text content of a passage, with highlight suggestion set to show on hover if available.
    * @param p passage to render
    * @returns 
    */
   const renderPassageText = (p: Passage) => {
-    if (p.isHighlighted || !p.nextHighlightSuggestion || hoveredPassageId !== p.id || activePassageId !== null) return p.text;
+    const showSuggestion = 
+      !p.isHighlighted && 
+      p.nextHighlightSuggestion && 
+      hoveredPassageId === p.id && 
+      activePassageId === null;
 
-    const startIdx = p.text.indexOf(p.nextHighlightSuggestion.passage);
-    const endIdx = startIdx + p.nextHighlightSuggestion.passage.length;
-    if (startIdx === -1) return p.text; // Suggestion passage not found in the passage text
+    if (!showSuggestion) return p.text;
+
+    const suggestionText = p.nextHighlightSuggestion!.passage;
+    const startIdx = p.text.indexOf(suggestionText);
     
+    if (startIdx === -1) return p.text;
+
+    const endIdx = startIdx + suggestionText.length;
+
     return (
       <>
         {p.text.slice(0, startIdx)}
-        <span className="bg-gray-300 cursor-pointer select-none mr-1"
+        <span 
           onClick={(e) => {
-            e.stopPropagation(); // Prevent triggering parent onMouseUp event
-            // TODO: Think of a way to use createNewPassage here. Issue is that createNewPassage relies on dom selection, which we don't have here.
+            e.stopPropagation();
+            handleAcceptSuggestion(e, p);
           }}
+          className="inline-block"
         >
-          {p.text.slice(startIdx, endIdx)}
+          <span
+            ref={visibleHighlightSuggestionRef}
+            className=" bg-gray-300 cursor-pointer select-none hover:bg-gray-400 mr-1"
+          >
+            {p.text.slice(startIdx, endIdx)}
+          </span>
         </span>
         <SuggestionBlob 
           passage={p} 
-          onClick={() => {
-            // TODO: Think of a way to use createNewPassage here. Issue is that createNewPassage relies on dom selection, which we don't have here.
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAcceptSuggestion(e, p);
           }}
         />
         {p.text.slice(endIdx)}
       </>
-    )
-  }
+    );
+  };
 
   return (
     <div className="flex w-full gap-7">
