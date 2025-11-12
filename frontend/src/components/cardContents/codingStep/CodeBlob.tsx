@@ -45,6 +45,7 @@ const CodeBlob = ({
   const currentlyEnteredValueRef = useRef(inputValue);
   const suggestionsDisabledRef = useRef<boolean>(false); // When user declines a suggestion, temporarily disable further suggestions
   const isFetchingRef = useRef(false);
+  const changeIndexRef = useRef<number>(inputValue.length); // Track index where last change occurred
 
   // CUSTOM HOOKS
   const { deleteCode, updateCode } = useCodeManager({
@@ -118,23 +119,62 @@ const CodeBlob = ({
     if (inputValue.trim().length === 0) fetchSuggestions();
   }, [activeCodeId]);
 
-  // Ensure cursor is placed to the end of the input, when activating the code blob
+  // Ensure correct cursor position after input value changes
   useEffect(() => {
-    if (activeCodeId === codeId && activeCodeRef.current) {
-      // Move cursor to end after inputValue updates
+    const changeIndex = changeIndexRef.current;
+    if (activeCodeRef.current) {
+      const selection = window.getSelection();
       const range = document.createRange();
-      const sel = window.getSelection();
-
-      if (activeCodeRef.current.firstChild) {
-        const textNode = activeCodeRef.current.firstChild;
-        const length = textNode.textContent?.length || 0;
-        range.setStart(textNode, Math.min(length, inputValue.length));
-        range.collapse(true);
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-      }
+      range.setStart(activeCodeRef.current.childNodes[0] || activeCodeRef.current, changeIndex);
+      range.collapse(true);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
     }
-  }, [activeCodeId, codeId]);
+  }, [inputValue]);
+
+  /** 
+   * 
+   */
+  const handleInputChange = (e: React.FormEvent<HTMLSpanElement>) => {
+    const selection = window.getSelection();
+    const range = selection?.getRangeAt(0);
+    
+    if (range) {
+      // Get cursor position relative to the contentEditable element
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(e.currentTarget);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+      changeIndexRef.current = preCaretRange.toString().length;
+      
+      // Update input value state
+      setInputValue(e.currentTarget.textContent || "");
+    }
+  }
+
+  /**
+   * Based on the current input value and the previous one, get the index where the change occurred.
+   * This helps to position the cursor correctly after updating the input value.
+   * @returns the index where the change occurred
+   */
+  const getChangeIndex = (prev: string, curr: string) => {
+    let i = 0;
+    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
+      i++;
+    }
+
+    // If strings are identical up to min length → change at end
+    if (i === Math.min(prev.length, curr.length)) {
+      return i;
+    }
+
+    if (prev.length < curr.length) {
+      // Insertion: caret after inserted segment
+      return i + (curr.length - prev.length);
+    } else {
+      // Deletion: caret stays at start of deleted region
+      return i;
+    }
+  };
 
 
   /**
@@ -243,7 +283,7 @@ const CodeBlob = ({
         }}
         contentEditable={true}
         suppressContentEditableWarning={true}
-        onInput={() => setInputValue(activeCodeRef.current?.textContent || "")}
+        onInput={handleInputChange}
         onFocus={() => setActiveCodeId(codeId)}
         onBlur={handleCodeEnter} // blurring is essentially same as pressing enter
         onKeyDown={(e) => handleKeyDown(e)}
