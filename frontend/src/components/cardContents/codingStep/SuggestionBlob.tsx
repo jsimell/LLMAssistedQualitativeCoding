@@ -19,7 +19,7 @@ const SuggestionBlob = ({
       <span
         className={`
           inline-flex items-center w-fit px-2 mr-1
-        bg-gray-200 border-1 my-0.5 border-gray-400 rounded-full hover:bg-gray-300 
+        bg-gray-300 border-1 my-0.5 border-gray-500 rounded-full hover:bg-gray-400/70
           text-gray-700
         `}
         onClick={onClick}

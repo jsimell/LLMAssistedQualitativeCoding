@@ -80,15 +80,10 @@ const CodingCardContent = () => {
         <span>
           <span
             id={p.id}
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent triggering parent onMouseUp event
-              if (p.isHighlighted && p.codeIds.length > 0)
-                setActiveCodeId(p.codeIds[p.codeIds.length - 1]);
-            }}
             className={`
               ${
                 p.isHighlighted
-                  ? "bg-tertiaryContainer hover:bg-tertiaryContainerHover cursor-pointer rounded-sm px-1 w-fit mr-1 "
+                  ? "bg-tertiaryContainer rounded-sm px-1 w-fit mr-1 cursor-default"
                   : ""
               }
               ${
@@ -198,7 +193,7 @@ const CodingCardContent = () => {
         >
           <span
             ref={visibleHighlightSuggestionRef}
-            className=" bg-gray-300 cursor-pointer select-none hover:bg-gray-400 mr-1"
+            className=" bg-gray-300 cursor-pointer select-none"
           >
             {p.text.slice(startIdx, endIdx)}
           </span>

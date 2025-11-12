@@ -265,14 +265,15 @@ const CodeBlob = ({
 
   return (
     <span
-      className={`inline-flex items-center self-center w-fit px-2 mr-1 my-0.5
+      className={`
+        inline-flex items-center self-center w-fit px-2 mr-1 my-0.5
       bg-tertiaryContainer border-1 border-gray-400 rounded-full hover:bg-tertiaryContainerHover 
-      ${
-        activeCodeId === codeId
-          ? "bg-tertiaryContainerHover outline-1 outline-onBackground shadow-[0_0_0_2px_black]"
-          : ""
-      } 
-      focus:outline-none focus:ring-1 focus:ring-onBackground`}
+        ${
+          activeCodeId === codeId
+            ? "bg-tertiaryContainerHover outline-1 border border-onBackground outline-onBackground shadow-[0_0_0_2px_black]"
+            : ""
+        } 
+      `}
       onClick={() => setActiveCodeId(codeId)}
     >
       <span
