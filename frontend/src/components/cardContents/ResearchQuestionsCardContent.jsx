@@ -46,16 +46,14 @@ const ResearchQuestionsCardContent = () => {
 
   return (
     <div className="flex flex-col w-full px-5 items-center">
-      <ul className="list-disc ml-4 pb-3">
+      <ul className="list-disc ml-4 pb-3 w-full">
         <li>
           Enter your <b>research questions</b> for inductive coding below. You
           can include multiple questions in the same field.
         </li>
         <li>
-          Optionally, you can also provide additional{" "}
-          <b>contextual information</b> (e.g. data origin, type of data, coding
-          contraints or instructions etc.) to help the AI give more precise
-          suggestions. This could include:
+          Optionally, you can also provide additional <b>contextual information</b> (e.g. data origin, type of data, coding
+          contraints or instructions etc.) to help the AI give more precise suggestions.
         </li>
       </ul>
       <form
@@ -65,7 +63,7 @@ const ResearchQuestionsCardContent = () => {
       >
         <div>
           <label htmlFor="RQs" className="text-nowrap">
-            Research question(s):
+            Research question(s): <sup className="text-red-600 text-sm ">*</sup>
           </label>
           <input
             id="RQs"
@@ -73,6 +71,7 @@ const ResearchQuestionsCardContent = () => {
             onChange={(e) => setCurrentRQs(e.target.value)}
             type="text"
             className="border-1 w-full h-fit"
+            required
           />
         </div>
         <div className="flex flex-col">
@@ -89,8 +88,8 @@ const ResearchQuestionsCardContent = () => {
       <Button
         label="Submit"
         onClick={informationHasChanged() ? handleSubmit : undefined}
-        variant={informationHasChanged() ? "tertiary" : "disabled"}
-        title={informationHasChanged() ? "Submit the current input" : ((!currentContextInfo && !currentRQs) ? "Please type something to enable submission" : "Please modify the information to enable submission")}
+        variant={informationHasChanged() && currentRQs ? "tertiary" : "disabled"}
+        title={informationHasChanged() && currentRQs ? "Submit the current input" : ((!currentRQs) ? "Please enter at least one research question to enable submission" : "Please modify the information to enable submission")}
       ></Button>
       {researchQuestions && (
         <div className="pt-3 pb-4 w-full">
