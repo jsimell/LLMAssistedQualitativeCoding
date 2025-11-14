@@ -1,6 +1,7 @@
 import { useContext } from "react";
 import { Passage, WorkflowContext } from "../../../../../context/WorkflowContext";
 import { callOpenAIStateless } from "../../../../../services/openai";
+import { getPassageWithSurroundingContext } from "../../utils/passageUtils";
 
 const OPENAI_MODEL = "gpt-4.1-nano"; // Use a nano model for rapid suggestions
 
@@ -57,7 +58,7 @@ export const useCodeSuggestions = () => {
 
       ### SURROUNDING CONTEXT (for understanding only):
       The target passage appears in this context (target marked by <<< >>>):
-      "${getTargetPassageWithContext(passage)}"
+      "${getPassageWithSurroundingContext(passage, passages, contextWindowSize ?? 500)}"
 
       **CODE ONLY THE TARGET PASSAGE SHOWN ABOVE. Use the surrounding context to understand meaning and flow, but do NOT code the surrounding text.**
 
@@ -95,125 +96,6 @@ export const useCodeSuggestions = () => {
   return parsedResponse;
 };
 
-  /** A helper function to get the surrounding text of a passage
-   * @param passage The passage object for which to get the surrounding text
-   * @param contextSize Number of characters to include before and after the passage (may not be exact because suitable cut points must be found)
-   * @returns A text window that contains the passage and its surrounding context
-   */
-  const getTargetPassageWithContext = (passage: Passage) => {
-    const passageOrder = passage.order;
-    let precedingText = "";
-    let followingText = "";
-
-    const contextSize = contextWindowSize ?? 500;
-
-    // Collect preceding passages
-    for (let i = passageOrder - 1; i >= 0; i--) {
-      const p = passages.find(p => p.order === i);
-      if (!p) break;
-
-      // Add entire p.text if within context limit
-      if (precedingText.length + p.text.length <= contextSize / 2 - 30) {
-        precedingText = p.text + precedingText;
-        continue;
-      } 
-
-      // Entire p.text does not fit: Find a suitable cut point
-      const maxRange = contextSize / 6;
-      
-      // 1) if p.text length is less than maxRange, include all of it
-      if (p.text.length <= maxRange) {
-        precedingText = p.text + precedingText;
-        break;
-      }
-      
-      let foundCutPoint = false;
-      let idx = p.text.length - 1;
-      
-      // 2) Try to cut at a line break within maxRange
-      while (idx > p.text.length - 1 - maxRange && idx >= 0) {
-        const char = p.text[idx];
-        if (char === "\n") {
-          precedingText = p.text.slice(idx + 1, p.text.length) + precedingText;
-          foundCutPoint = true;
-          break;
-        }
-        idx--;
-      }
-
-      if (!foundCutPoint) {
-        // 3) Try to cut at a sentence end within maxRange from the end
-        const searchStart = Math.max(0, p.text.length - maxRange);
-        const indices = [".", "!", "?"]
-          .map(punct => p.text.lastIndexOf(punct, p.text.length))
-          .filter(idx => idx !== -1 && idx >= searchStart);
-        const endIdx = indices.length ? Math.max(...indices) : -1;
-        
-        if (endIdx !== -1) {
-          precedingText = p.text.slice(endIdx + 1, p.text.length) + precedingText;
-        } else {
-          // 4) No good cut point found, cut at maxRange and include "..." to indicate truncation
-          precedingText = "..." + p.text.slice(p.text.length - maxRange, p.text.length) + precedingText;
-        }
-      }
-      
-      break; // Stop after finding a cut point
-    }
-
-    // Collect following passages
-    for (let j = passageOrder + 1; j < passages.length; j++) {
-      const p = passages.find(p => p.order === j);
-      if (!p) break;
-
-      // Add text if within context limit
-      if (followingText.length + p.text.length <= contextSize / 2 - 30) {
-        followingText += p.text;
-        continue;
-      } 
-
-      // Entire p.text does not fit: Find a suitable cut point
-      const maxRange = contextSize / 6;
-      
-      // 1) if p.text length is less than maxRange, include all of it
-      if (p.text.length <= maxRange) {
-        followingText += p.text;
-        break; // Stop after adding this passage
-      }
-      
-      let foundCutPoint = false;
-      let i = 0;
-      
-      // 2) Try to cut at a line break within maxRange
-      while (i < maxRange && i < p.text.length) {
-        const char = p.text[i];
-        if (char === "\n") {
-          followingText += p.text.slice(0, i + 1);
-          foundCutPoint = true;
-          break;
-        }
-        i++;
-      }
-
-      if (!foundCutPoint) {
-        // 3) Try to cut at a sentence end within maxRange from the start
-        const indices = [".", "!", "?"]
-          .map(punct => p.text.indexOf(punct))
-          .filter(idx => idx !== -1 && idx <= maxRange);
-        const endIdx = indices.length ? Math.min(...indices) : -1;
-        
-        if (endIdx !== -1) {
-          followingText += p.text.slice(0, endIdx + 1);
-        } else {
-          // 4) No good cut point found, cut at maxRange and include "..." to indicate truncation
-          followingText += p.text.slice(0, maxRange) + "...";
-        }
-      }
-      
-      break; // Stop after finding a cut point
-    }
-
-    return `${precedingText}<<<${passage.text}>>>${followingText}`;
-  }
 
     /** Constructs few-shot examples string for the system prompt based on existing coded passages.
      *
@@ -281,7 +163,7 @@ export const useCodeSuggestions = () => {
 
       ### SURROUNDING CONTEXT (for understanding only):
       The target passage appears in this context (target marked by <<< >>>):
-      "${getTargetPassageWithContext(passage)}"
+      "${getPassageWithSurroundingContext(passage, passages, contextWindowSize ?? 500)}"
 
       **CODE ONLY THE TARGET PASSAGE SHOWN ABOVE. Use the surrounding context to understand meaning and flow, but do NOT code the surrounding text.**
 

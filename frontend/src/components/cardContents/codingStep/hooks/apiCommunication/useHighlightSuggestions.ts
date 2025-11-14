@@ -5,6 +5,7 @@ import {
   WorkflowContext,
 } from "../../../../../context/WorkflowContext";
 import { callOpenAIStateless } from "../../../../../services/openai";
+import { getContextForHighlightSuggestions } from "../../utils/passageUtils";
 
 const MAX_RETRY_ATTEMPTS = 2;
 const OPENAI_MODEL = "gpt-4.1"; // Define the model to use
@@ -33,26 +34,20 @@ export const useHighlightSuggestions = () => {
    * @returns A string prompt for the AI.
    */
   const constructSystemPrompt = (passage: Passage) => {
+    const { precedingText, mainText } = getContextForHighlightSuggestions(
+      passage,
+      passages,
+    );
+
     return `
       ## ROLE:
       You are an expert qualitative analyst AI assistant. 
-      Your primary task is to identify and code the next relevant passage from the provided uncoded context window.
-
-      ## CONTEXT WINDOW:
-      "${passage.order !== 0  ? "..." : ""}${passage.text.slice(0, 1000)}..."
-
-      ## CONTEXT INFORMATION:
-      **Research questions:** ${researchQuestions}
-      **Additional context information:** ${contextInfo}
-      **Codebook:** [${Array.from(codebook).map((code) => `${code}`).join(", ")}]
-      **Few-shot examples of user coded passages:** [
-        ${constructFewShotExamplesString(passage)}
-      ]
+      Your primary task is to identify and code the next relevant passage from the provided context window.
 
       ## APPROACH:
-      1. Review the research questions, user's prior coding style (from few-shot examples), and the codebook.
-      2. Read the context window from the top down to find the FIRST subpassage offering meaningful insight related to the research questions.
-      - The selection style (length, cropping, detail) should mimic few-shot examples.
+      1. Carefully review the context information found under CONTEXT INFORMATION.
+      2. Read the MAIN TEXT (text between <<START OF MAIN TEXT>> and <<END OF MAIN TEXT>>) from the top down to find the FIRST subpassage offering meaningful insight related to the research questions.
+      - The selection style (length, cropping, detail) should mimic the few-shot examples, if they exist.
       - It is important that you identify the FIRST relevant passage, not necessarily the most relevant one.
       3. Suggest ONE initial code that best represents the identified subpassage in relation to the research questions.
       - Use a code from the codebook when possible.
@@ -61,30 +56,48 @@ export const useHighlightSuggestions = () => {
       5. If no relevant passage is found, respond with an empty JSON object: {}.
 
       After each analysis, validate that the selected passage is an exact, 
-      case-sensitive substring of the context window and that the code precisely matches the codebook style. 
+      case-sensitive substring of the text between <<START OF MAIN TEXT>> and <<END OF MAIN TEXT>> and that the code precisely matches the codebook style. 
       Only proceed if these criteria are met; otherwise, self-correct before responding.
 
       ## RESPONSE FORMAT:
-      Return ONLY a plain JavaScript object in the following format:
+      Return ONLY a valid JavaScript object in the following format:
       {
-      "passage": "<exact, case-sensitive substring from the context window>",
-      "code": "<suggested code>"
+      "passage": "exact, case-sensitive substring from the context window",
+      "codeSuggestion": "suggested code"
       }
       Guidelines:
       - Do NOT include explanations or text outside the returned object.
       - Do not indicate truncation in any way (e.g. "..." in the passage). The passage must be exact.
       - The suggested code MUST NOT include semicolons (;). If punctuation is needed, use a different delimiter.
-      - Start the codes with a lowercase or an uppercase letter based on the style that is used in the codebook.
+      - Start the code with a lowercase or an uppercase letter based on the style that is used in the codebook.
       - The passage must be an exact, case-sensitive substring of the context window, including whitespace and punctuation.
       
       Example: coding a passage:
       {
-      "passage": "Relevant text from the context window.",
-      "code": "A code from the codebook or a new code"
+      "passage": "Relevant passage from the context window.",
+      "codeSuggestion": "A code from the codebook or a new code"
       }
 
       Example: if no relevant passage is found:
       {}
+
+      ## CONTEXT INFORMATION:
+      **Research questions:** ${researchQuestions}
+      **Additional context information:** ${contextInfo ?? "No additional context provided."}
+      **Codebook:** [${Array.from(codebook).map((code) => `${code}`).join(", ")} ?? "No codes yet."]
+      **Few-shot examples of user coded passages:** [
+        ${constructFewShotExamplesString(passage)}
+      ]
+
+      ## CONTEXT WINDOW:
+      ### PRECEDING TEXT (for understanding only):
+      <<START OF PRECEDING TEXT>>
+      ${precedingText}
+      <<END OF PRECEDING TEXT>>
+      ### MAIN TEXT (your highlight search area):
+      <<START OF MAIN TEXT>>
+      ${mainText}
+      <<END OF MAIN TEXT>>
       `;
   };
 
@@ -140,21 +153,27 @@ export const useHighlightSuggestions = () => {
           return null;
         }
 
+        const { mainText } = getContextForHighlightSuggestions(
+          passage,
+          passages,
+        );
+
         // Validate response format
         const parsedResponse = JSON.parse(response.output_text.trim());
         if (
+          !parsedResponse ||
           typeof parsedResponse !== "object" ||
-          typeof parsedResponse.passage !== "string" ||
-          typeof parsedResponse.code !== "string" ||
           Object.keys(parsedResponse).length !== 2 ||
-          !passage.text.includes(parsedResponse.passage) ||
-          parsedResponse.passage.includes(";")
+          typeof parsedResponse.passage !== "string" ||
+          typeof parsedResponse.codeSuggestion !== "string" ||
+          !mainText.includes(parsedResponse.passage) ||
+          parsedResponse.codeSuggestion.includes(";")
         ) {
           throw new Error("InvalidResponseFormatError: Response does not match the required format. Received response:" + response.output_text.trim());
         }
         
         // Success (no error caught) - update state and exit
-        return parsedResponse;
+        return {passage: parsedResponse.passage, code: parsedResponse.codeSuggestion};
       } catch (error) {
         // Parsing failed, retry with a clarifying message
         clarificationMessage = `
@@ -171,7 +190,7 @@ export const useHighlightSuggestions = () => {
         if (
           error instanceof Error && error.message.includes("400")
         ) {
-          await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 seconds before retrying
+          await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 0.5 seconds before retrying
           continue;
         }
 
