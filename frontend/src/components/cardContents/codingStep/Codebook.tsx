@@ -3,13 +3,17 @@ import { WorkflowContext } from "../../../context/WorkflowContext";
 import CodeBookRow from "./CodeBookRow";
 
 const Codebook = () => {
-  const { codebook } = useContext(WorkflowContext)!;
+  const { codebook, codes } = useContext(WorkflowContext)!;
+
+  const getCodeCount = (code: string) => {
+    return codes.filter((c) => c.code === code).length;
+  };
 
   const codebookArray = useMemo(() => {
     return Array.from(codebook)
-      .sort((a, b) => a.localeCompare(b))
-      .filter((code) => code ? code.trim().length > 0 : false);
-  }, [codebook]); // Only re-sort when codebook changes
+      .filter((code) => code ? code.trim().length > 0 : false)
+      .sort((a, b) => getCodeCount(b) - getCodeCount(a));
+  }, [codebook, codes]); // Only re-sort when codebook or codes change
 
   return (
     <div className="flex flex-col items-center w-full h-fit rounded-xl border-1 border-outline">
