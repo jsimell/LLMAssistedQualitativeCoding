@@ -30,7 +30,7 @@ const CodeBlob = ({
 
   // CONTEXT
   const context = useContext(WorkflowContext)!; // Non-null assertion since parent already ensures WorkflowContext is provided
-  const { codes, codebook } = context;
+  const { codes, codebook, aiSuggestionsEnabled } = context;
 
   // STATE
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<
@@ -64,6 +64,11 @@ const CodeBlob = ({
 
   // Update ghost text based on input value and suggestions
   useEffect(() => {
+    if (suggestionsDisabledRef.current || !aiSuggestionsEnabled) {
+      inputValue.length == 0 ? setGhostText("Type code...") : setGhostText("");
+      return;
+    }
+
     const afterLastSemicolon = inputValue
       .slice(inputValue.lastIndexOf(";") + 1)
       .trim();
@@ -94,7 +99,7 @@ const CodeBlob = ({
         matchingSuggestion?.slice(afterLastSemicolon.trim().length) || ""
       );
     }
-  }, [inputValue, autocompleteSuggestions, parentPassage.codeSuggestions]);
+  }, [inputValue, autocompleteSuggestions, parentPassage.codeSuggestions, aiSuggestionsEnabled]);
 
   // Fetch autocomplete suggestions if this codeBlob is empty and becomes active
   useEffect(() => {
@@ -151,31 +156,6 @@ const CodeBlob = ({
     }
   }
 
-  /**
-   * Based on the current input value and the previous one, get the index where the change occurred.
-   * This helps to position the cursor correctly after updating the input value.
-   * @returns the index where the change occurred
-   */
-  const getChangeIndex = (prev: string, curr: string) => {
-    let i = 0;
-    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
-      i++;
-    }
-
-    // If strings are identical up to min length → change at end
-    if (i === Math.min(prev.length, curr.length)) {
-      return i;
-    }
-
-    if (prev.length < curr.length) {
-      // Insertion: caret after inserted segment
-      return i + (curr.length - prev.length);
-    } else {
-      // Deletion: caret stays at start of deleted region
-      return i;
-    }
-  };
-
 
   /**
    * Handles a keyboard event that occurs during code editing.
@@ -198,6 +178,7 @@ const CodeBlob = ({
       if (ghostText && ghostText !== "Type code...") {
         setInputValue(inputValue + ghostText + "; ");
         setGhostText(""); // Clear ghost text after accepting
+        setTimeout(moveInputCursorToEnd, 0); // Move cursor to end after DOM update
         return;
       }
     }
@@ -254,14 +235,29 @@ const CodeBlob = ({
         setAutocompleteSuggestions([...suggestions, ...Array.from(codebook)]);
         isFetchingRef.current = false;
       };
-      console.log("Fetching new suggestions after code update...");
+
       fetchSuggestions();
-    
     }
     
     setActiveCodeId(null); // Set activeCodeId to null at the end
     return;
   };
+
+
+  /**
+   * Moves the input cursor to the end of the contentEditable element 
+  */
+  const moveInputCursorToEnd = () => {
+    if (!activeCodeRef.current) return;
+    const range = document.createRange();
+        const selection = window.getSelection();
+        range.selectNodeContents(activeCodeRef.current);
+        range.collapse(false); // false = collapse to end
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        changeIndexRef.current = inputValue.length; // Update the change index ref
+  };
+
 
   return (
     <span
@@ -293,7 +289,21 @@ const CodeBlob = ({
         {inputValue}
       </span>
       {activeCodeId === codeId && !suggestionsDisabledRef.current && (
-        <span className="text-gray-500">{ghostText}</span>
+        <span 
+          onMouseDown={(e) => {
+            e.preventDefault(); // Prevent blur event on contentEditable element
+          }}
+          onClick={() => {
+            // Focus the contentEditable element when ghost text is clicked
+            if (activeCodeRef.current) {
+              activeCodeRef.current.focus();
+              moveInputCursorToEnd();
+            }
+          }}
+          className="text-gray-500"
+        >
+          {ghostText}
+        </span>
       )}
       <button
         type="button"
