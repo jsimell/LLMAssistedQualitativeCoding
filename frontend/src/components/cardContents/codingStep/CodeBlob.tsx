@@ -38,7 +38,7 @@ const CodeBlob = ({
   const [inputValue, setInputValue] = useState(codeObject.code);
     
   // REFS
-  const suggestionsDisabledRef = useRef<boolean>(false); // When user declines a suggestion, temporarily disable further suggestions
+  const suggestionsDisabledRef = useRef<boolean>(false); // When user declines a ghost text suggestion, disable suggestions for this code edit session
   const changeIndexRef = useRef<number>(inputValue.length); // Track index where last change occurred
 
   // CUSTOM HOOKS
@@ -58,7 +58,7 @@ const CodeBlob = ({
   // Update ghost text based on input value and suggestions
   useEffect(() => {
     if (suggestionsDisabledRef.current || !aiSuggestionsEnabled) {
-      inputValue.length == 0 ? setGhostText("Type code...") : setGhostText("");
+      inputValue.length === 0 ? setGhostText("Type code...") : setGhostText("");
       return;
     }
 
@@ -97,12 +97,6 @@ const CodeBlob = ({
       );
     }
   }, [inputValue, parentPassage.codeSuggestions, parentPassage.autocompleteSuggestions, aiSuggestionsEnabled]);
-
-  // Update autocomplete suggestions on reactivation
-  useEffect(() => {
-    if (activeCodeId !== codeId) return; // This effect should only run for the active code
-    suggestionsDisabledRef.current = false;  // If suggestions were disabled before, re-enable them when code becomes active again
-  }, [activeCodeId]);
 
   // Ensure correct cursor position after input value changes
   useEffect(() => {
@@ -186,6 +180,10 @@ const CodeBlob = ({
   /** Updates the code into the global state. Fetches new autocomplete suggestions if the value changed */
   const handleCodeEnter = () => {
     if (activeCodeId === null) return; // For safety: should not happen
+
+    // Re-enable suggestions for next edit session
+    suggestionsDisabledRef.current = false;
+
     const codeObject: Code | undefined = codes.find(
       (c) => c.id === activeCodeId
     );
@@ -230,7 +228,7 @@ const CodeBlob = ({
   return (
     <span
       className={`
-        inline-flex items-center self-center w-fit px-2 mr-1 my-0.5
+        inline-flex items-center self-center w-fit pl-2 pr-1.5 mr-1 my-0.5
       bg-tertiaryContainer border-1 border-gray-400 rounded-full hover:bg-tertiaryContainerHover 
         ${
           activeCodeId === codeId
@@ -282,7 +280,7 @@ const CodeBlob = ({
           deleteCode(codeId);
           setActivePassageId(null);
         }}
-        className={`bg-transparent rounded-full hover:text-gray-800 hover:bg-onBackground/10 cursor-pointer
+        className={`bg-transparent ml-1.5 rounded-full hover:text-gray-800 hover:bg-onBackground/10 cursor-pointer
           ${activeCodeId === codeId ? "text-gray-700" : "text-gray-600"}`}
       >
         <XMarkIcon className="size-5" />
