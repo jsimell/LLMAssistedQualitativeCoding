@@ -28,7 +28,7 @@ const CodingCardContent = () => {
   } = context;
 
   // Local state for tracking the currently active passage and code input
-  const [activePassageId, setActivePassageId] = useState<PassageId | null>(null);
+  const [activeHighlightedPassageId, setActiveHighlightedPassageId] = useState<PassageId | null>(null);
   const [hoveredPassageId, setHoveredPassageId] = useState<PassageId | null>(null);
   const [latestHighlightedPassageId, setLatestHighlightedPassageId] = useState<PassageId | null>(null);
 
@@ -45,13 +45,13 @@ const CodingCardContent = () => {
   // Effect hook to keep activePassageId in sync with activeCodeId
   useEffect(() => {
     if (activeCodeId === null) {
-      setActivePassageId(null);
+      setActiveHighlightedPassageId(null);
       return;
     } else {
       const activePassage = context.codes.find(
         (c) => c.id === activeCodeId
       )?.passageId;
-      setActivePassageId(activePassage !== undefined ? activePassage : null);
+      setActiveHighlightedPassageId(activePassage !== undefined ? activePassage : null);
     }
   }, [activeCodeId]);
 
@@ -118,62 +118,6 @@ const CodingCardContent = () => {
 
 
   /**
-   *
-   * @param p - the passage to be rendered
-   * @returns - the jsx code of the passage
-   */
-  const renderPassage = (p: Passage) => {
-    return (
-      <div 
-        key={p.id}
-        onClick={() => {
-          if (!p.isHighlighted && p.nextHighlightSuggestion === null) {
-            setShowHighlightSuggestionFor(p.id);
-          }
-        }}
-        onMouseEnter={() => setHoveredPassageId(p.id)}
-        onMouseLeave={() => setHoveredPassageId(null)}
-        className="inline"
-      >
-        <span>
-          <span
-            id={p.id}
-            className={`
-              ${
-                p.isHighlighted
-                  ? "bg-tertiaryContainer rounded-sm px-1 w-fit mr-1 cursor-default"
-                  : ""
-              }
-              ${
-                activePassageId === p.id
-                  ? "bg-tertiaryContainerHover underline decoration-onBackground"
-                  : ""
-              }
-            `}
-          >
-            {renderPassageText(p)}
-          </span>
-          <span>
-            {p.codeIds?.length > 0 &&
-              p.codeIds.map((codeId) => (
-                <CodeBlob
-                  key={codeId}
-                  parentPassage={p}
-                  codeId={codeId}
-                  activeCodeId={activeCodeId}
-                  setActiveCodeId={setActiveCodeId}
-                  setActivePassageId={setActivePassageId}
-                  activeCodeRef={activeCodeRef}
-                />  
-              ))}
-          </span>
-        </span>
-      </div>
-    );
-  };
-
-
-  /**
    * Handles accepting a highlight suggestion when it is clicked.
    * @param passage - the passage for which to accept the suggestion
    */
@@ -190,7 +134,7 @@ const CodingCardContent = () => {
     const endIdx = startIdx + suggestionText.length;
 
     // 1) Hide suggestion so the passage DOM becomes a single text node again
-    setActivePassageId(null);
+    setActiveHighlightedPassageId(null);
     setShowHighlightSuggestionFor(null);
 
     // 2) Use a timeout to ensure the DOM has updated before creating the range
@@ -226,6 +170,7 @@ const CodingCardContent = () => {
     const showSuggestion = 
       !p.isHighlighted && 
       p.nextHighlightSuggestion && 
+      p.nextHighlightSuggestion.passage.trim().length > 0 &&
       !activeCodeId &&
       showHighlightSuggestionFor === p.id;
 
@@ -266,10 +211,67 @@ const CodingCardContent = () => {
     );
   };
 
+
+  /**
+   *
+   * @param p - the passage to be rendered
+   * @returns - the jsx code of the passage
+   */
+  const renderPassage = (p: Passage) => {
+    return (
+      <div 
+        key={p.id}
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent triggering parent onMouseDown
+          if (!p.isHighlighted) {
+            setShowHighlightSuggestionFor(p.id);
+          }
+        }}
+        onMouseEnter={() => setHoveredPassageId(p.id)}
+        onMouseLeave={() => setHoveredPassageId(null)}
+        className="inline"
+      >
+        <span>
+          <span
+            id={p.id}
+            className={`
+              ${
+                p.isHighlighted
+                  ? "bg-tertiaryContainer rounded-sm px-1 w-fit mr-1 cursor-default"
+                  : ""
+              }
+              ${
+                activeHighlightedPassageId === p.id
+                  ? "bg-tertiaryContainerHover underline decoration-onBackground"
+                  : ""
+              }
+            `}
+          >
+            {renderPassageText(p)}
+          </span>
+          <span>
+            {p.codeIds?.length > 0 &&
+              p.codeIds.map((codeId) => (
+                <CodeBlob
+                  key={codeId}
+                  parentPassage={p}
+                  codeId={codeId}
+                  activeCodeId={activeCodeId}
+                  setActiveCodeId={setActiveCodeId}
+                  setActiveHighlightedPassageId={setActiveHighlightedPassageId}
+                  activeCodeRef={activeCodeRef}
+                />  
+              ))}
+          </span>
+        </span>
+      </div>
+    );
+  };
+
+
   return (
     <div className="flex w-full gap-7">
       <div
-        onMouseDown={() => setShowHighlightSuggestionFor(null)}
         onMouseUp={() => {
           const selection = window.getSelection();
           if (selection && selection.rangeCount > 0) {
@@ -285,7 +287,9 @@ const CodingCardContent = () => {
       <div className="flex flex-col items-center gap-4 sticky top-5 h-fit w-fit min-w-50 max-w-sm">
         <Codebook />
         <div className="flex flex-col gap-3 items-center justify-center rounded-xl border-1 border-outline p-6">
-          <div className="flex gap-2 w-full items-center justify-between">
+          <div 
+            className="flex gap-2 w-full items-center justify-between"
+          >
             <p>AI suggestions</p>
             <ToggleSwitch
               booleanState={aiSuggestionsEnabled}
