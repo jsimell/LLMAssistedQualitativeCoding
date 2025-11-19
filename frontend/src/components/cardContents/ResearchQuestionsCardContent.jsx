@@ -59,7 +59,7 @@ const ResearchQuestionsCardContent = () => {
       <form
         ref={formRef}
         onSubmit={informationHasChanged() ? handleSubmit : undefined}
-        className="flex flex-col gap-2 pb-2 w-full"
+        className="flex flex-col gap-2 pb-4 w-full"
       >
         <div>
           <label htmlFor="RQs" className="text-nowrap">
@@ -92,7 +92,7 @@ const ResearchQuestionsCardContent = () => {
         title={informationHasChanged() && currentRQs ? "Submit the current input" : ((!currentRQs) ? "Please enter at least one research question to enable submission" : "Please modify the information to enable submission")}
       ></Button>
       {researchQuestions && (
-        <div className="pt-3 pb-4 w-full">
+        <div className="pt-5 pb-5 w-full">
           <p className="pb-3">
             Resubmit the form to change the currently submitted information:
           </p>
