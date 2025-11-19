@@ -2,7 +2,7 @@ import StepIndicator from "./StepIndicator"
 
 const Sidebar = () => {
   return (
-    <div className="flex flex-col gap-6 p-12 bg-container">
+    <div className="flex flex-col gap-6 p-12 border-r-1 border-outline bg-container">
       <StepIndicator label={"Upload Data"} idx={1}/>
       <StepIndicator label={"Access OpenAI API"} idx={2}/>
       <StepIndicator label={"Research Question"} idx={3}/>
