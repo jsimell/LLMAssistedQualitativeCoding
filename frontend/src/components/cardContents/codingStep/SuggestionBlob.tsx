@@ -26,6 +26,7 @@ const SuggestionBlob = ({
       >
         {passage.nextHighlightSuggestion?.code}
       </span>
+      {passage.text.endsWith("\n") && (<br />)}
     </>
   );
 };
