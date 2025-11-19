@@ -33,7 +33,7 @@ const CodeBlob = ({
 
   // CONTEXT
   const context = useContext(WorkflowContext)!; // Non-null assertion since parent already ensures WorkflowContext is provided
-  const { codes, aiSuggestionsEnabled } = context;
+  const { codes, passages, aiSuggestionsEnabled, setShowHighlightSuggestionFor } = context;
 
   // STATE
   const [ghostText, setGhostText] = useState<string>("Type code...");
@@ -182,7 +182,7 @@ const CodeBlob = ({
     }
   };
 
-  /** Updates the code into the global state. Fetches new autocomplete suggestions if the value changed */
+  /** Updates the code into the global state. */
   const handleCodeEnter = () => {
     if (activeCodeId === null) return; // For safety: should not happen
     if (clickedSuggestionsToggleRef.current) {
@@ -217,6 +217,10 @@ const CodeBlob = ({
     if (cleanedInputValue !== codeObject.code) {
       updateCode(activeCodeId, cleanedInputValue);
     }
+
+    const followingPassage = passages.find(p => p.order === parentPassage.order + 1);
+    const followingPassageId = followingPassage ? followingPassage.id : null;
+    if (followingPassageId) setShowHighlightSuggestionFor(followingPassageId)
     
     setActiveCodeId(null); // Set activeCodeId to null at the end
     return;
