@@ -256,39 +256,41 @@ const CodeBlob = ({
         `}
         onClick={() => setActiveCodeId(codeId)}
       >
-        <span
-          ref={(el) => {
-            if (activeCodeId === codeId) {
-              activeCodeRef.current = el;
-            }
-          }}
-          contentEditable={true}
-          suppressContentEditableWarning={true}
-          onInput={handleInputChange}
-          onFocus={() => setActiveCodeId(codeId)}
-          onBlur={handleCodeEnter} // blurring is essentially same as pressing enter
-          onKeyDown={(e) => handleKeyDown(e)}
-          className="bg-transparent outline-none whitespace-pre empty:before:content-['\200B']"
-        >
-          {inputValue}
-        </span>
-        {activeCodeId === codeId && !suggestionsDisabledRef.current && (
-          <span 
-            onMouseDown={(e) => {
-              e.preventDefault(); // Prevent blur event on contentEditable element
-            }}
-            onClick={() => {
-              // Focus the contentEditable element when ghost text is clicked
-              if (activeCodeRef.current) {
-                activeCodeRef.current.focus();
-                moveInputCursorToEnd();
+        <div className="inline whitespace-pre-wrap">
+          <span
+            ref={(el) => {
+              if (activeCodeId === codeId) {
+                activeCodeRef.current = el;
               }
             }}
-            className="text-gray-500"
+            contentEditable={true}
+            suppressContentEditableWarning={true}
+            onInput={handleInputChange}
+            onFocus={() => setActiveCodeId(codeId)}
+            onBlur={handleCodeEnter} // blurring is essentially same as pressing enter
+            onKeyDown={(e) => handleKeyDown(e)}
+            className="bg-transparent outline-none whitespace-pre-wrap empty:before:content-['\200B']"
           >
-            {ghostText}
+            {inputValue}
           </span>
-        )}
+          {activeCodeId === codeId && !suggestionsDisabledRef.current && (
+            <span 
+              onMouseDown={(e) => {
+                e.preventDefault(); // Prevent blur event on contentEditable element
+              }}
+              onClick={() => {
+                // Focus the contentEditable element when ghost text is clicked
+                if (activeCodeRef.current) {
+                  activeCodeRef.current.focus();
+                  moveInputCursorToEnd();
+                }
+              }}
+              className="text-gray-500"
+            >
+              {ghostText}
+            </span>
+          )}
+        </div>
         <button
           type="button"
           onMouseDown={(e) => {
