@@ -52,8 +52,7 @@ const ResearchQuestionsCardContent = () => {
           can include multiple questions in the same field.
         </li>
         <li>
-          Optionally, you can also provide additional <b>contextual information</b> (e.g. data origin, type of data, coding
-          contraints or instructions etc.) to help the AI give more precise suggestions.
+          Optionally, you can also provide additional <b>contextual information</b> about your research (e.g. data origin, type of data, interviewee demographics etc.) to help the AI give more precise suggestions.
         </li>
       </ul>
       <form

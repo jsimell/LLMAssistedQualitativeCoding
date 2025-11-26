@@ -1,126 +1,128 @@
 import { Code, Passage } from "../../../../context/WorkflowContext";
 
 /**
- * Goes through a string from the start to end and tries to find a suitable cut point within 200 characters.
+ * Includes text from the end up to minimumLength, then looks for a suitable cut point within the previous cutWindowSize characters.
  * @param text text to cut
+ * @param minimumLength the number of characters after which to start looking for a cut point
+ * @param cutWindowSize the maximum number of characters to look for a cut point
  * @returns the text cut at a suitable point
  */
-export const cutTextFromEnd = (text: string) => {
-  const maxRange = 200;
-
-  // 1) Try to cut at a line break within the text length, and within maxRange
-  let i = 0;
-  while (i < maxRange && i < text.length) {
-    const char = text[i];
-    if (char === "\n") {
-      return text.slice(0, i + 1);
-    }
-    i++;
+export const getPrecedingContext = (text: string, minimumLength: number, cutWindowSize: number) => {
+  // If text is already short enough, return it as is
+  if (text.length <= minimumLength) {
+    return text;
   }
 
-  // 2) Try to cut at a sentence end within maxRange from the start
-  const indices = [".", "!", "?"]
-    .map((punct) => text.indexOf(punct))
-    .filter((idx) => idx !== -1 && idx <= maxRange);
-  const endIdx = indices.length ? Math.min(...indices) : -1;
-  if (endIdx !== -1) {
-    return text.slice(0, endIdx + 1);
-  } else {
-    // 3) No good cut point found, cut at maxRange and include "..." to indicate truncation
-    return text.slice(0, maxRange) + "...";
+  // First, take the minimumLength part
+  let includedText = text.slice(text.length - minimumLength);
+
+  // Then, look for a suitable cut point in the preceding cutWindowSize characters
+  const cutWindow = text.slice(text.length - minimumLength - cutWindowSize, text.length - minimumLength);
+  
+  // If cut window is shorter than cutWindowSize ->  entire text fits in minimumLength + cutWindowSize
+  if (cutWindow.length < cutWindowSize) {
+    includedText = includedText + cutWindow;
+    return includedText;
   }
+
+  // Look for a line break to cut at
+  const lineBreakIdx = cutWindow.lastIndexOf("\n");
+  if (lineBreakIdx !== -1) {
+    includedText = cutWindow.slice(lineBreakIdx + 1) + includedText;
+    return includedText;
+  }
+
+  // Next, look for sentence ending punctuation
+  const sentenceEndIdx = Math.max(
+    cutWindow.lastIndexOf(". "),
+    cutWindow.lastIndexOf("! "),
+    cutWindow.lastIndexOf("? ")
+  );
+  if (sentenceEndIdx !== -1) {
+    includedText = cutWindow.slice(sentenceEndIdx + 1) + includedText;
+    return includedText;
+  }
+
+  // If no suitable cut point found, simply cut after minimumLength has been included
+  includedText = "..." + includedText;  // Indicate truncation with "..."
+  return includedText;
 };
 
 /**
- * Goes through a string from the end to start and tries to find a suitable cut point within 200 characters.
+ * Includes text from the start up to minimumLength, then looks for a suitable cut point within the next cutSearchArea characters.
  * @param text the text to cut
+ * @param minimumLength the number of characters to include at minimum
+ * @param cutSearchArea the number of characters after minimumLength to look for a suitable cut point
  * @returns the text cut at a suitable point
  */
-export const cutTextFromStart = (text: string) => {
-  const maxRange = 200;
-
-  // 1) Try to cut at a line break within the text length and maxRange
-  let i = text.length - 1;
-  while (i > text.length - 1 - maxRange && i >= 0) {
-    const char = text[i];
-    if (char === "\n") {
-      return text.slice(i + 1, text.length);
-    }
-    i--;
+export const getTrailingContext = (text: string, minimumLength: number, cutWindowSize: number) => {
+  // If text is already short enough, return it as is
+  if (text.length <= minimumLength) {
+    return text;
   }
 
-  // 2) Try to cut at a sentence end within maxRange from the end
-  const searchStart = Math.max(0, text.length - maxRange);
-  const indices = [".", "!", "?"]
-    .map((punct) => text.lastIndexOf(punct, text.length))
-    .filter((idx) => idx !== -1 && idx >= searchStart);
-  const endIdx = indices.length ? Math.max(...indices) : -1;
-  if (endIdx !== -1) {
-    return text.slice(endIdx + 1, text.length);
-  } else {
-    // 3) No good cut point found, cut at maxRange and include "..." to indicate truncation
-    return "..." + text.slice(text.length - maxRange, text.length);
+  // First, take the minimumLength part
+  let includedText = text.slice(0, minimumLength);
+
+  // Then, look for a suitable cut point in the next cutSearchArea characters
+  const cutWindow = text.slice(minimumLength, minimumLength + cutWindowSize);
+
+  // If cut window is shorter than cutWindowSize ->  entire text fits in minimumLength + cutWindowSize
+  if (cutWindow.length < cutWindowSize) {
+    includedText = includedText + cutWindow;
+    return includedText;
   }
+
+  // Look for a line break to cut at
+  const lineBreakIdx = cutWindow.indexOf("\n");
+  if (lineBreakIdx !== -1) {
+    includedText = includedText + cutWindow.slice(lineBreakIdx + 1);
+    return includedText;
+  }
+
+  // Look for sentence ending punctuation
+  const sentenceEndIdx = Math.min(
+    cutWindow.indexOf(". "),
+    cutWindow.indexOf("! "),
+    cutWindow.indexOf("? ")
+  );
+  if (sentenceEndIdx !== -1) {
+    includedText = includedText + cutWindow.slice(0, sentenceEndIdx + 1);
+    return includedText;
+  }
+
+  // Fallback: If no suitable cut point found, simply cut directly after minimumLength has been included
+  includedText = includedText + "...";  // Indicate truncation with "..."
+  return includedText;
 };
 
 /**
  * Gets the passage with surrounding context. Context is cut intelligently to avoid breaking sentences or lines.
- * Truncation appears within 200 characters at both the start and end of the context.
+ * Truncation appears within 200 characters at both the start and end of the contextWindow.
  * @param passage The passage object for which to get the surrounding context
  * @param passages All passages in the document
- * @param contextWindowSize Number of characters to include in the context window (including the passage text) (default: 500).
- * If context window is 0, the function starts looking for suitable cut points immediately before and after the passage text.
+ * @param minContextWindowSize Minimum number of additional characters to include in the context window in addition to the passage text.
+ * Gets divided to before and after the passage text. If context window is 0, the function cuts at the suitable cut point occurring after contextWindow.
  * @param markPassageInResult Whether to mark the passage text in the result with <<< >>> (default: true)
  * @returns A text window that contains the passage and its surrounding context
  */
 export const getPassageWithSurroundingContext = (
   passage: Passage,
   passages: Passage[],
-  contextWindowSize: number = 500,
+  minContextWindowSize: number,
   markPassageInResult: boolean,
 ): string => {
   const passageOrder = passage.order;
-  let precedingText = "";
-  let followingText = "";
+  let precedingText = passages.filter((p) => p.order < passageOrder).map((p) => p.text).join("");
+  let trailingText = passages.filter((p) => p.order > passageOrder).map((p) => p.text).join("");
 
-  const contextSize = contextWindowSize ?? 500;
-
-  // COLLECT PRECEDING PASSAGES //
-  for (let i = passageOrder - 1; i >= 0; i--) {
-    const p = passages.find((p) => p.order === i);
-    if (!p) break;
-
-    // Add entire p.text if within context limit
-    if (precedingText.length + p.text.length <= contextSize / 2 - 30) {
-      precedingText = p.text + precedingText;
-      continue;
-    }
-
-    // p.text would exceed context limit, cut it intelligently
-    precedingText = cutTextFromStart(p.text) + precedingText;
-    break; // Stop after finding a cut point
-  }
-
-  // COLLECT FOLLOWING PASSAGES //
-  for (let j = passageOrder + 1; j < passages.length; j++) {
-    const p = passages.find((p) => p.order === j);
-    if (!p) break;
-
-    // Add text if within context limit
-    if (followingText.length + p.text.length <= contextSize / 2 - 30) {
-      followingText += p.text;
-      continue;
-    }
-
-    // p.text would exceed context limit, cut it intelligently
-    followingText += cutTextFromEnd(p.text);
-    break; // Stop after finding a cut point
-  }
+  precedingText = getPrecedingContext(precedingText, minContextWindowSize / 2, 200);
+  trailingText = getTrailingContext(trailingText, minContextWindowSize / 2, 200);
 
   if (markPassageInResult) {
-    return `${precedingText}<<<${passage.text}>>>${followingText}`;
+    return `${precedingText}<<<${passage.text}>>>${trailingText}`;
   } else {
-    return `${precedingText}${passage.text}${followingText}`;
+    return `${precedingText}${passage.text}${trailingText}`;
   }
 };
 
@@ -130,6 +132,8 @@ export const getPassageWithSurroundingContext = (
  * Cuts preceding and following text within 200 characters at a suitable point using cutPassageFromStart and cutPassageFromEnd.
  * @param startPassage The first passage from which the LLM will search for highlightsuggestions
  * @param passages current passages
+ * @param searchStartIndex The index in the startPassage text from which to start searching for highlights
+ * @param minContextWindowSize The total MINIMUM size of the context window to return (default: 1000)
  * @returns an object containing precedingText (for llm understanding, may contain text from preceding passage),
  * and mainText (the text to search for highlights, is from startPassage in its entirety)
  */
@@ -137,35 +141,39 @@ export const getContextForHighlightSuggestions = (
   startPassage: Passage,
   passages: Passage[],
   searchStartIndex: number,
-): { precedingText: string; mainText: string } => {
+  minContextWindowSize: number
+): { precedingText: string; searchArea: string } => {
   // If there's only one passage, return its text split at searchStartIndex
   if (passages.length === 1) {
-    return { precedingText: passages[0].text.slice(0, searchStartIndex), mainText: passages[0].text.slice(searchStartIndex) };
+    return { precedingText: passages[0].text.slice(0, searchStartIndex), searchArea: passages[0].text.slice(searchStartIndex) };
   }
   
-  const beforeStartIdx = startPassage.text.slice(0, searchStartIndex);
-  const afterStartIdx = startPassage.text.slice(searchStartIndex);
   const passageOrder = startPassage.order;
-  const precedingPassage = passages.find((p) => p.order === passageOrder - 1);
 
-  // Get preceding text
-  const precedingText = precedingPassage
-    ? cutTextFromStart(precedingPassage.text) + beforeStartIdx
-    : beforeStartIdx;
-  
-  // Get main text
-  const maxMainTextLength = 800; // Using 800 instead of 1000, because text cutting requires some buffer
-  
-  // If entire afterStartIdx fits within limit, return it
-  if (afterStartIdx.length <= maxMainTextLength) {
-    return {precedingText, mainText: afterStartIdx};
+  // Construct uncut preceding text
+  let precedingText = 
+    passages.filter((p) => p.order < passageOrder).map((p) => p.text).join("") + 
+    startPassage.text.slice(0, searchStartIndex);
+
+  // Construct uncut search area text
+  let searchArea = 
+    startPassage.text.slice(searchStartIndex) + 
+    passages.filter((p) => p.order > passageOrder).map((p) => p.text).join("");
+
+  const precedingSize = Math.floor(minContextWindowSize / 5);  // max 20% of context window for preceding text
+  const searchAreaSize = minContextWindowSize - precedingSize;  // remaining context window for search area
+
+  // If preceding text is already short enough, only cut search area
+  if (precedingText.trim().length <= precedingSize) {
+    return {precedingText: precedingText.trim(), searchArea: getTrailingContext(searchArea, searchAreaSize, 200)};
   }
 
-  let mainText = afterStartIdx.slice(0, maxMainTextLength);
-  // After 800, characters, look for a suitable cut point in remaining text
-  mainText += cutTextFromEnd(afterStartIdx.slice(mainText.length));
+  // Cut preceding text to suitable length
+  precedingText = getPrecedingContext(precedingText, precedingSize, 200);
+  // Cut search area to suitable length
+  searchArea = getTrailingContext(searchArea, searchAreaSize, 200);
 
-  return {precedingText, mainText}
+  return {precedingText, searchArea}
 };
 
 /** Constructs few-shot examples string for the system prompt based on existing coded passages.
@@ -189,9 +197,9 @@ export const constructFewShotExamplesString = (passage: Passage, passages: Passa
       
       return JSON.stringify({
         passage: p.text,
-        surroundingContext: getPassageWithSurroundingContext(p, passages, 50, false),
+        surroundingContext: getPassageWithSurroundingContext(p, passages, 100, false),
         codes: codes_
-      });
+      }, null, 2);
     })
     .join(",\n");
 

@@ -22,7 +22,7 @@ export const useCodeManager = ({
   }
 
   // Context values
-  const { codes, setCodes, setPassages, nextCodeIdNumber, setNextCodeIdNumber, nextPassageIdNumber, setNextPassageIdNumber } = context;
+  const { codes, setCodes, setPassages, nextCodeIdNumber, setNextCodeIdNumber } = context;
 
 
   /** Updates the value of a specific code.

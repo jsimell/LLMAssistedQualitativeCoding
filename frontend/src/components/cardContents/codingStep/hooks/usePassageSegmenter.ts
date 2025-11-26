@@ -35,7 +35,7 @@ export const usePassageSegmenter = () => {
    * @param initialCodes Optional initial codes to assign to the new passage
    * @returns The ID of the newly highlighted passage, or null if creation failed
    */
-  const createNewPassage = (range: Range, initialCodes: string[] = []) => {
+  const createNewPassage = (range: Range, initialCodeSuggestions: string[] = []) => {
     // If there's no real range (i.e. not a highlight, just a click), do nothing.
     if (range.collapsed) {
       console.log("Range is collapsed, no passage created.");
@@ -112,7 +112,7 @@ export const usePassageSegmenter = () => {
           ...sourcePassage,
           isHighlighted: true,
           codeIds: [...(sourcePassage.codeIds || []), newCodeId],
-          codeSuggestions: [],
+          codeSuggestions: initialCodeSuggestions,
           nextHighlightSuggestion: null,
         },
       ];
@@ -128,7 +128,7 @@ export const usePassageSegmenter = () => {
           text: highlighted,
           isHighlighted: true,
           codeIds: [newCodeId],
-          codeSuggestions: [],
+          codeSuggestions: initialCodeSuggestions,
           autocompleteSuggestions: [],
           nextHighlightSuggestion: null,
         },
@@ -165,7 +165,7 @@ export const usePassageSegmenter = () => {
           text: highlighted,
           isHighlighted: true,
           codeIds: [newCodeId],
-          codeSuggestions: [],
+          codeSuggestions: initialCodeSuggestions,
           autocompleteSuggestions: [],
           nextHighlightSuggestion: null,
         },
@@ -192,7 +192,7 @@ export const usePassageSegmenter = () => {
           text: highlighted,
           isHighlighted: true,
           codeIds: [newCodeId],
-          codeSuggestions: [],
+          codeSuggestions: initialCodeSuggestions,
           autocompleteSuggestions: [],
           nextHighlightSuggestion: null,
         },
@@ -241,7 +241,7 @@ export const usePassageSegmenter = () => {
       {
         id: newCodeId,
         passageId: highlightedPassageId,
-        code: initialCodes.join("; "),
+        code: "",
       },
     ]);
 

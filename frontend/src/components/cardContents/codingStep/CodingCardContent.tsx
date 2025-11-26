@@ -51,6 +51,13 @@ const CodingCardContent = () => {
   useEffect(() => {
     if (pendingHighlightFetches.length === 0) return;
 
+    // If a code is activated, there should not be any pending suggestion fetches.
+    // Code entering will trigger the next suggestion fetch after code editing is done.
+    if (activeCodeId) {
+      setPendingHighlightFetches([]);
+      return;
+    }
+
     const idToProcess = pendingHighlightFetches[0];
     if (!idToProcess || !passages.find(p => p.id === idToProcess)) {
       // Invalid passage id, or passage no longer exists -> skip
@@ -122,8 +129,8 @@ const CodingCardContent = () => {
     if (!parentPassage) return;
     const suggestionText = parentPassage.nextHighlightSuggestion?.passage;
     if (!suggestionText) return;
-    const suggestionCode = parentPassage.nextHighlightSuggestion?.code;
-    if (!suggestionCode) return;
+    const suggestionCodes = parentPassage.nextHighlightSuggestion?.codes;
+    if (!suggestionCodes || suggestionCodes.length === 0) return;
 
     const startIdx = parentPassage.text.indexOf(suggestionText);
     if (startIdx === -1) return;
@@ -133,7 +140,6 @@ const CodingCardContent = () => {
     setShowHighlightSuggestionFor(null);
 
     // Use a timeout to ensure the DOM has updated before creating the range
-    let newPassageId: PassageId | null = null;
     setTimeout(() => {
       const root = document.getElementById(parentPassage.id);
       const textNode = root?.firstChild as Text | null;
@@ -142,7 +148,7 @@ const CodingCardContent = () => {
         const range = document.createRange();
         range.setStart(textNode, startIdx);
         range.setEnd(textNode, endIdx);
-        newPassageId = createNewPassage(range, [suggestionCode + "; "]) ?? null;
+        createNewPassage(range, suggestionCodes) ?? null;
       }
     }, 0);
   };
@@ -184,7 +190,6 @@ const CodingCardContent = () => {
       setShowHighlightSuggestionFor(null);
 
       // Use setTimeout to allow setShowHighlightSuggestionFor to take effect before proceeding
-      let newPassageId: PassageId | null = null;
       setTimeout(() => {
         // Recreate range after DOM update
         const rangeAfterDomUpdate = document.createRange();
@@ -197,7 +202,7 @@ const CodingCardContent = () => {
           console.warn("Text node not found in passage during user highlight handling.");
           return; // Fallback: do nothing if text node not found
         }
-        newPassageId = createNewPassage(rangeAfterDomUpdate) ?? null;
+        createNewPassage(rangeAfterDomUpdate);
       }, 0);
     }
   };
@@ -266,8 +271,13 @@ const CodingCardContent = () => {
           e.stopPropagation(); // Prevent triggering parent onMouseDown
           if (!p.isHighlighted) {
             setActiveCodeId(null);
-            setShowHighlightSuggestionFor(p.id);
-            // TODO: Search for highlight suggestion starting from the paragraph the user clicked on.
+            setPendingHighlightFetches((prev) => {
+              // Only add if not already pending
+              if (!prev.includes(p.id)) {
+                return [...prev, p.id];
+              }
+              return prev;
+            });
           }
         }}
         onMouseEnter={() => setHoveredPassageId(p.id)}
@@ -299,6 +309,8 @@ const CodingCardContent = () => {
                   key={codeId}
                   parentPassage={p}
                   codeId={codeId}
+                  codeSuggestions={p.codeSuggestions}
+                  autocompleteSuggestions={p.autocompleteSuggestions}
                   activeCodeId={activeCodeId}
                   setActiveCodeId={setActiveCodeId}
                   setPendingHighlightFetches={setPendingHighlightFetches}

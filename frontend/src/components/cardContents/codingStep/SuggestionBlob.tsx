@@ -24,7 +24,7 @@ const SuggestionBlob = ({
         `}
         onClick={onClick}
       >
-        {passage.nextHighlightSuggestion?.code}
+        {passage.nextHighlightSuggestion?.codes[0]}
       </span>
     </>
   );

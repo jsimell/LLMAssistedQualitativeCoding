@@ -166,6 +166,20 @@ export const useSuggestionsManager = () => {
   }, [passages]);
 
   /**
+   * Updates the autocomplete suggestions for the given passage.
+   * @param id The ID of the passage for which to update autocomplete suggestions.
+   */
+  const updateAutocompleteSuggestionsForPassage = useCallback(async (id: PassageId) => {
+    if (!aiSuggestionsEnabled) return;
+    const callTimestamp = Date.now(); // Unique timestamp for this call
+    latestCallTimestamps.current.set(id, callTimestamp); // Mark as latest
+    const passage = passages.find((p) => p.id === id);
+    if (!passage || !passage.isHighlighted) return;
+
+    await refreshAutocompleteSuggestions(id, callTimestamp);
+  }, [passages]);
+
+  /**
    * Fetches a new highlight suggestion for the given passage, effectively declining the previous one.
    * @param id The ID of the passage for which to decline the highlight suggestion.
    */
@@ -218,7 +232,7 @@ export const useSuggestionsManager = () => {
       if (
         suggestion &&
         suggestion.passage.trim().length > 0 &&
-        suggestion.code.trim().length > 0
+        suggestion.codes.length > 0
       ) {
         // Valid suggestion obtained, stop here
         return np.id as PassageId;
@@ -230,6 +244,7 @@ export const useSuggestionsManager = () => {
   return {
     declineHighlightSuggestion,
     updateSuggestionsForPassage,
+    updateAutocompleteSuggestionsForPassage,
     inclusivelyFetchHighlightSuggestionAfter,
     isFetchingHighlightSuggestion,
   };

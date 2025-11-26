@@ -11,6 +11,8 @@ import { XMarkIcon } from "@heroicons/react/24/solid";
 interface CodeBlobProps {
   codeId: CodeId;
   parentPassage: Passage;
+  codeSuggestions: string[];
+  autocompleteSuggestions: string[];
   activeCodeId: CodeId | null;
   setActiveCodeId: React.Dispatch<React.SetStateAction<CodeId | null>>;
   setPendingHighlightFetches: React.Dispatch<React.SetStateAction<Array<PassageId>>>;
@@ -23,12 +25,15 @@ interface CodeBlobProps {
   };
   suggestionsManager: {
     updateSuggestionsForPassage: (id: `passage-${number}`) => Promise<void>;
+    updateAutocompleteSuggestionsForPassage: (id: `passage-${number}`) => Promise<void>;
   };
 }
 
 const CodeBlob = ({
   codeId,
   parentPassage,
+  codeSuggestions,
+  autocompleteSuggestions,
   activeCodeId,
   setActiveCodeId,
   setPendingHighlightFetches,
@@ -39,7 +44,7 @@ const CodeBlob = ({
 }: CodeBlobProps) => {
 
   // Extract functions from the custom hooks passed via props
-  const { updateSuggestionsForPassage } = suggestionsManager;
+  const { updateSuggestionsForPassage, updateAutocompleteSuggestionsForPassage } = suggestionsManager;
   const { deleteCode, updateCode } = codeManager;
 
   // CONTEXT
@@ -56,6 +61,7 @@ const CodeBlob = ({
   const suggestionsDisabledRef = useRef<boolean>(false); // When user declines a ghost text suggestion, disable suggestions for this code edit session
   const changeIndexRef = useRef<number>(inputValue.length); // Track index where last change occurred inside contentEditable
   const inputRef = useRef<HTMLSpanElement | null>(null);
+  const firstSuggestionsFetch = useRef<boolean>(true);
 
   // EFFECTS
   // Code blob should be active when first created IF it is the only code of the passage
@@ -71,7 +77,9 @@ const CodeBlob = ({
     }
   }, [activeCodeId]);
 
-  // Fetch new code suggestions and autocomplete suggestions for the parent passage when code blob is activated
+  // Fetch new code suggestions and autocomplete suggestions for the parent passage when code blob is activated.
+  // EXCEPTION: skip code suggestions fetch on first render, if the code blob was created through a highlight suggestion,
+  // because in that case the initial code suggestions are already provided.
   useEffect(() => {
     if (!aiSuggestionsEnabled) return;
     if (!activeCodeId) return;
@@ -80,8 +88,17 @@ const CodeBlob = ({
       if (aiSuggestionsEnabled) {
         // Update suggestions for the parent passage
         const fetchSuggestions = async () => {
-          await updateSuggestionsForPassage(parentPassage.id);
+          if (firstSuggestionsFetch.current && parentPassage.codeSuggestions.length > 0) {
+            // Only fetch autocomplete suggestions on first render if initial code suggestions exist
+            await updateAutocompleteSuggestionsForPassage(parentPassage.id);
+            return;
+          } else {
+            // On subsequent renders, fetch both code suggestions and autocomplete suggestions
+            await updateSuggestionsForPassage(parentPassage.id);
+          }
+          firstSuggestionsFetch.current = false;
         };
+
         fetchSuggestions();
       }
     }
@@ -93,7 +110,7 @@ const CodeBlob = ({
     if (updatedCodeObject) {
       setInputValue(updatedCodeObject.code);
     }
-  }, [codes, codeId]);
+  }, [codes]);
 
   // Update ghost text based on input value and suggestions
   useEffect(() => {
@@ -110,10 +127,10 @@ const CodeBlob = ({
       // Nothing typed after last semicolon, or nothing typed at all
       // Find the first suggestion that hasn't been typed yet
       const inputValueLower = inputValue.toLowerCase();
-      const existingCodesSet = new Set(codes.map(c => c.code.toLowerCase())); // Use a set for faster lookup
+      const existingCodesSet = new Set(codes.filter(c => c.passageId === parentPassage.id).map(c => c.code.toLowerCase()));
 
-      const suggestion = parentPassage.codeSuggestions.find(suggestion => {
-        const suggestionLower = suggestion.toLowerCase();
+      const suggestion = codeSuggestions.find(s => {
+        const suggestionLower = s.toLowerCase();
         const isNotInputted = !inputValueLower.includes(suggestionLower);
         const isNotAnExistingCode = !existingCodesSet.has(suggestionLower);
         return isNotInputted && isNotAnExistingCode;
@@ -125,7 +142,7 @@ const CodeBlob = ({
       }
     } else {
       // There is some text after the last semicolon, or the user has typed part of the first code
-      const matchingSuggestion = parentPassage.autocompleteSuggestions.find(
+      const matchingSuggestion = autocompleteSuggestions.find(
         (suggestion) =>
           suggestion
             .toLowerCase()
@@ -136,7 +153,7 @@ const CodeBlob = ({
         matchingSuggestion?.slice(afterLastSemicolon.trim().length) || ""
       );
     }
-  }, [activeCodeId, inputValue, parentPassage, aiSuggestionsEnabled]);
+  }, [activeCodeId, inputValue, codeSuggestions, autocompleteSuggestions, aiSuggestionsEnabled]);
 
   // Ensure correct cursor position after input value changes
   useEffect(() => {

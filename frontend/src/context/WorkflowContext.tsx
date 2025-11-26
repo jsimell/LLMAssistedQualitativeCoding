@@ -40,7 +40,7 @@ export interface Code {
 export interface HighlightSuggestion {
   passage: string;
   startIndex: number;
-  code: string;
+  codes: string[];
 }
 
 export interface FileInfo {
