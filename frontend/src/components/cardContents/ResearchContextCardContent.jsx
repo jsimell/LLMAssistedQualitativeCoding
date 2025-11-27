@@ -2,7 +2,7 @@ import { useState, useContext, useRef, useEffect } from "react";
 import { WorkflowContext } from "../../context/WorkflowContext";
 import Button from "../Button";
 
-const ResearchQuestionsCardContent = () => {
+const ResearchContextCardContent = () => {
   const {
     currentStep,
     researchQuestions,
@@ -46,7 +46,7 @@ const ResearchQuestionsCardContent = () => {
 
   return (
     <div className="flex flex-col w-full px-5 items-center">
-      <ul className="list-disc ml-4 pb-3 w-full">
+      <ul className="list-disc ml-6.5 pb-3 w-full">
         <li>
           Enter your <b>research questions</b> for inductive coding below. You
           can include multiple questions in the same field.
@@ -93,7 +93,7 @@ const ResearchQuestionsCardContent = () => {
       {researchQuestions && (
         <div className="pt-5 pb-5 w-full">
           <p className="pb-3">
-            Resubmit the form to change the currently submitted information:
+            Modify and resubmit the form to change the currently submitted information:
           </p>
           <p>
             <b>Research questions:</b> {researchQuestions}
@@ -107,4 +107,4 @@ const ResearchQuestionsCardContent = () => {
   );
 };
 
-export default ResearchQuestionsCardContent;
+export default ResearchContextCardContent;

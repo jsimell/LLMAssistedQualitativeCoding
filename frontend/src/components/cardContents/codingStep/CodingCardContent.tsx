@@ -9,6 +9,7 @@ import SuggestionBlob from "./SuggestionBlob";
 import { useSuggestionsManager } from "./hooks/useSuggestionsManager";
 import InfoBox from "../../InfoBox";
 import { useCodeManager } from "./hooks/useCodeManager";
+import CodingSettingsCard from "./CodingSettingsCard";
 
 const CodingCardContent = () => {
   // Get global states and setters from the context
@@ -342,60 +343,9 @@ const CodingCardContent = () => {
       >
         {passages.map((p) => renderPassage(p))}
       </div>
-      <div className="flex flex-col items-center gap-4 sticky top-5 h-fit w-fit min-w-50 max-w-sm">
+      <div className="flex flex-col items-center gap-4 h-fit w-fit min-w-50 max-w-sm">
         <Codebook codeManager={codeManager} />
-        <div className="flex flex-col gap-3 items-center justify-center rounded-xl border-1 border-outline p-6 mb-4">
-          <div 
-            className="flex gap-2 w-full items-center justify-between"
-          >
-            <p>AI suggestions</p>
-            <ToggleSwitch
-              booleanState={aiSuggestionsEnabled}
-              setBooleanState={setAiSuggestionsEnabled}
-              onMouseDown={() => {
-                clickedSuggestionsToggleRef.current = true;
-              }}
-            />
-          </div>
-          <div className="flex gap-2 items-center justify-between">
-            <div className="flex gap-1 items-center">
-              <p>Context window for code suggestions (characters):</p>
-              <div>
-                <QuestionMarkCircleIcon
-                  className="size-4.5 text-tertiary"
-                  title="Approximate number of characters the prompt will include when generating code suggestions for a highlighted passage. The window is cut intelligently (e.g., at a line break), so the final context length may differ slightly. A value of 0 means only the highlighted passage is included in the prompt. &#10;&#10;Larger windows may improve suggestion relevance but increase response time and cost. Recommended values are between 200 and 1000."
-                />
-              </div>
-            </div>
-            <input
-              type="number"
-              value={contextWindowSize ?? ""}
-              onChange={(e) =>
-                setContextWindowSize(
-                  e.target.value === "" ? null : Number(e.target.value)
-                )
-              }
-              onBlur={(e) => {
-                if (e.target.value === "" || e.target.value === null) {
-                  setContextWindowSize(0); // Set to minimum value if input is empty
-                }
-              }}
-              onKeyDown={(e) => {
-                e.key === "Enter" && (e.target as HTMLInputElement).blur();
-              }}
-              className="border-1 border-outline rounded-md p-1 max-w-[80px]"
-            />
-          </div>
-          <div className="flex flex-col w-full">
-            <label htmlFor="codingGuidelines">Coding guidelines for the LLM:</label>
-            <textarea
-              id="codingGuidelines"
-              value={codingGuidelines}
-              onChange={(e) => setCodingGuidelines(e.target.value)}
-              className="border-1 border-outline rounded-md p-1"
-            />
-          </div>
-        </div>
+        <CodingSettingsCard clickedSuggestionsToggleRef={clickedSuggestionsToggleRef} />
         {isFetchingHighlightSuggestion && !activeCodeId && <InfoBox msg="Fetching highlight suggestion..." icon={null} variant="loading"></InfoBox>}
       </div>
     </div>

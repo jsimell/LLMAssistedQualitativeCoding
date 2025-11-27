@@ -1,7 +1,7 @@
 import WorkspaceCard from './WorkspaceCard'
 import DataUploadCardContent from './cardContents/DataUploadCardContent'
 import AccessAPICardContent from './cardContents/AccessAPICardContent'
-import ResearchQuestionsCardContent from './cardContents/ResearchQuestionsCardContent'
+import ResearchContextCardContent from './cardContents/ResearchContextCardContent'
 import CodingCardContent from './cardContents/codingStep/CodingCardContent'
 import ResultsCardContent from './cardContents/ResultsCardContent'
 import { useContext } from 'react'
@@ -23,8 +23,8 @@ function Workspace() {
         </WorkspaceCard>
       )}
       {currentStep === 3 && (
-        <WorkspaceCard title="Step 3: Research Question">
-          <ResearchQuestionsCardContent />
+        <WorkspaceCard title="Step 3: Research Context">
+          <ResearchContextCardContent />
         </WorkspaceCard>
       )}
       {currentStep === 4 && (
