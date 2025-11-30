@@ -13,7 +13,7 @@ interface CodeBookRowProps {
 const CodeBookRow = ({ code, codeManager }: CodeBookRowProps) => {
   if (!code.trim()) return null;
 
-  const { codes } = useContext(WorkflowContext)!; // Non-null assertion since parent already ensures WorkflowContext is provided
+  const { codes, setCodebook } = useContext(WorkflowContext)!; // Non-null assertion since parent already ensures WorkflowContext is provided
 
   const [editInputValue, setEditInputValue] = useState(code);
   const [showEditInteraction, setShowEditInteraction] = useState(false);
@@ -46,7 +46,21 @@ const CodeBookRow = ({ code, codeManager }: CodeBookRowProps) => {
   };
 
   const saveChanges = () => {
-    editAllInstancesOfCode(code, editInputValue);
+    const codeCount = codes.filter((c) => (c.code ?? "").trim() === code.trim()).length
+    if (codeCount === 0) {
+      // Simply update codebook
+      setCodebook((prev) => {
+        const updated = new Set(prev);
+        updated.delete(code);
+        if (editInputValue.trim().length > 0) {
+          updated.add(editInputValue.trim());
+        }
+        return updated;
+      });
+    } else {
+      // Edit all instances in codes state
+      editAllInstancesOfCode(code, editInputValue);
+    }
     setShowEditInteraction(false);
   };
 
@@ -109,7 +123,7 @@ const CodeBookRow = ({ code, codeManager }: CodeBookRowProps) => {
   return (
     <div
       key={code}
-      className={`flex justify-between items-center gap-10 w-full ${
+      className={`flex justify-between items-center gap-2 w-full ${
         showEditInteraction ? "flex rounded-lg mb-4" : ""
       }`}
     >
@@ -117,16 +131,16 @@ const CodeBookRow = ({ code, codeManager }: CodeBookRowProps) => {
         renderEditInteraction()
       ) : (
         <>
-          <span className="flex items-center gap-1.5 py-1">
+          <span>{`(${
+            codes.filter((c) => (c.code ?? "").trim() === code.trim()).length
+          })`}</span>
+          <span className="flex items-center w-full justify-between gap-4 py-1">
             {code.trim()}
             <PencilSquareIcon
               onClick={() => setShowEditInteraction(true)}
               className="w-6 h-6 p-0.5 flex-shrink-0 rounded-sm text-[#007a60] hover:bg-tertiary/10 cursor-pointer"
             />
           </span>
-          <span>{`(${
-            codes.filter((c) => (c.code ?? "").trim() === code.trim()).length
-          })`}</span>
         </>
       )}
     </div>
