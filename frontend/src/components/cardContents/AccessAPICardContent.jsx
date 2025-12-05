@@ -6,7 +6,7 @@ import InfoBox from "../InfoBox";
 import { validateApiKey } from "../../services/validateApiKey";
 
 const AccessAPICardContent = () => {
-  const [currentInput, setCurrentInput] = useState("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");
+  const [currentInput, setCurrentInput] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isValid, setIsValid] = useState(false);
@@ -47,7 +47,7 @@ const AccessAPICardContent = () => {
   }
 
   return (
-    <>
+    <div className="flex flex-col items-center">
       <div className="flex items-center justify-center w-full pb-6">
         <form ref={formRef} onSubmit={handleSubmit} className="flex flex-1 max-w-[400px] gap-1.5 items-center justify-center">
           <label htmlFor="apiKey" className="text-nowrap">OpenAI API key:</label>
@@ -82,7 +82,7 @@ const AccessAPICardContent = () => {
           <InfoBox msg="API key is valid: You may proceed to the next step" icon={CheckCircleIcon} variant="success"></InfoBox>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
