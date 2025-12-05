@@ -34,6 +34,9 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
           onMouseDown={() => {
             clickedSuggestionsToggleRef.current = true;
           }}
+          onMouseLeave={() => {
+            clickedSuggestionsToggleRef.current = false;
+          }}
         />
       </div>
       <div className="flex gap-2 items-center justify-between">

@@ -31,6 +31,8 @@ export const useCodeManager = ({ setActiveCodeId }: UseCodeManagerProps) => {
     setPassages,
     nextCodeIdNumber,
     setNextCodeIdNumber,
+    nextPassageIdNumber,
+    setNextPassageIdNumber,
   } = context;
 
   /** Updates the value of a specific code.
@@ -186,7 +188,7 @@ export const useCodeManager = ({ setActiveCodeId }: UseCodeManagerProps) => {
 
       // Create a new merged passage (empty codeIds)
       const newMergedPassage: Passage = {
-        id: affectedPassageId, // reuse the current one’s id
+        id: 'passage-' + nextPassageIdNumber as PassageId,
         order: mergePrev ? prevPassage.order : updatedPassage.order,
         text: mergedText,
         isHighlighted: false,
@@ -195,6 +197,8 @@ export const useCodeManager = ({ setActiveCodeId }: UseCodeManagerProps) => {
         autocompleteSuggestions: [],
         nextHighlightSuggestion: null,
       };
+
+      setNextPassageIdNumber(nextPassageIdNumber + 1);
 
       // Insert the new merged passage and remove the old ones
       const filtered = prev.filter((p) => !passagesToRemove.includes(p.id));

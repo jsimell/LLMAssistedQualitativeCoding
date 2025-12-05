@@ -10,7 +10,7 @@ import {
 } from "../../utils/passageUtils";
 import { usePrompts } from "./usePrompts";
 
-const OPENAI_MODEL = "gpt-4.1-nano"; // Use a nano model for rapid suggestions
+const OPENAI_MODEL = "gpt-4.1-mini";
 const PRECEDING_CONTEXT_RATIO = 0.7;
 const TRAILING_CONTEXT_RATIO = 1 - PRECEDING_CONTEXT_RATIO;
 

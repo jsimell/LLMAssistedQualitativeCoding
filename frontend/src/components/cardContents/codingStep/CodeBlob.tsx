@@ -17,6 +17,7 @@ interface CodeBlobProps {
   setActiveCodeId: React.Dispatch<React.SetStateAction<CodeId | null>>;
   setPendingHighlightFetches: React.Dispatch<React.SetStateAction<Array<PassageId>>>;
   clickedSuggestionsToggleRef: React.RefObject<boolean>;
+  clickedExampleBlobRef: React.RefObject<boolean>;
   isLastCodeOfPassage: boolean;
   codeManager: {
     updateCode: (cid: CodeId, newCodeValue: string) => PassageId | null;
@@ -38,6 +39,7 @@ const CodeBlob = ({
   setActiveCodeId,
   setPendingHighlightFetches,
   clickedSuggestionsToggleRef,
+  clickedExampleBlobRef,
   isLastCodeOfPassage,
   codeManager,
   suggestionsManager,
@@ -255,8 +257,9 @@ const CodeBlob = ({
   /** Updates the code into the global state. */
   const handleCodeEnter = async () => {
     if (activeCodeId === null) return; // For safety: should not happen
-    if (clickedSuggestionsToggleRef.current) {
-      // If code enter was caused by user clicking the suggestions toggle, refocus the code blob instead of updating the code
+    if (clickedSuggestionsToggleRef.current || clickedExampleBlobRef.current) {
+      // If code enter was caused by user clicking the suggestions toggle or a few-shot example checkbox, 
+      // refocus the code blob instead of updating the code
       inputRef.current?.focus();
       return;
     }

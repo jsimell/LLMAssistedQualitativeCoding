@@ -2,12 +2,13 @@ interface ToggleSwitchProps {
   booleanState: boolean;
   setBooleanState: React.Dispatch<React.SetStateAction<boolean>>;
   onMouseDown?: () => void;
+  onMouseLeave?: () => void;
   disabled?: boolean;
 }
 
-const ToggleSwitch = ({ booleanState, setBooleanState, onMouseDown, disabled = false }: ToggleSwitchProps) => {
+const ToggleSwitch = ({ booleanState, setBooleanState, onMouseDown, onMouseLeave, disabled = false }: ToggleSwitchProps) => {
   return (
-    <label onMouseDown={onMouseDown} className="toggle-switch relative inline-block w-11 h-5 cursor-pointer select-none">
+    <label onMouseDown={onMouseDown} onMouseLeave={onMouseLeave} className="toggle-switch relative inline-block w-11 h-5 cursor-pointer select-none">
       {/* Rail */}
       <input
         type="checkbox"

@@ -65,12 +65,11 @@ const CodingCardContent = () => {
   const [pendingHighlightFetches, setPendingHighlightFetches] = useState<
     Array<PassageId>
   >([]);
-  const [displayedColumn, setDisplayedColumn] = useState<string>(
-    columnNames[0] || ""
-  );
+  const [displayedColumn, setDisplayedColumn] = useState<string>(columnNames[0] || "");
 
   // Refs
   const clickedSuggestionsToggleRef = useRef<boolean>(false); // Track if the most recent click was on the suggestions toggle
+  const clickedExampleBlobRef = useRef<boolean>(false); // Track if the most recent click was on a few-shot example blob
   const isProcessingPendingRef = useRef<boolean>(false); // Used for preventing overlapping processing of the same queue head
   // Keep a stable ref to the latest fetch function to avoid effect re-trigger on identity changes
   const inclusiveFetchRef = useRef(inclusivelyFetchHighlightSuggestionAfter);
@@ -182,21 +181,6 @@ const CodingCardContent = () => {
     return () => document.removeEventListener("keydown", handleEscapeOrTab);
   }, [showHighlightSuggestionFor, activeCodeId, declineHighlightSuggestion]);
 
-  /*
-   * Handles resetting clickedSuggestionsToggleRef on clicks outside the toggle
-   */
-  useEffect(() => {
-    const handleDocumentClick = (e: MouseEvent) => {
-      // Only reset if the click is not on the toggle switch
-      if (!(e.target as Element).closest(".toggle-switch")) {
-        clickedSuggestionsToggleRef.current = false;
-      }
-    };
-
-    document.addEventListener("click", handleDocumentClick);
-    return () => document.removeEventListener("click", handleDocumentClick);
-  }, []);
-
   /**
    * Handles accepting a highlight suggestion.
    * @param passage - the passage for which to accept the suggestion
@@ -206,8 +190,7 @@ const CodingCardContent = () => {
     if (!parentPassage || !parentPassage.nextHighlightSuggestion) return;
     const suggestionText = parentPassage.nextHighlightSuggestion?.passage;
     const suggestionCodes = parentPassage.nextHighlightSuggestion?.codes;
-    if (!suggestionText || !suggestionCodes || suggestionCodes.length === 0)
-      return;
+    if (!suggestionText || !suggestionCodes || suggestionCodes.length === 0) return;
 
     const startIdx = parentPassage.nextHighlightSuggestion.startIndex;
     const endIdx = startIdx + suggestionText.length;
@@ -262,13 +245,10 @@ const CodingCardContent = () => {
         const beforeLength =
           document.getElementById("before-suggestion")?.textContent.length ?? 0;
         const suggestionLength =
-          document.getElementById("highlight-suggestion")?.textContent.length ??
-          0;
-        startIdxInFullPassage =
-          beforeLength + suggestionLength + selection.anchorOffset;
+          document.getElementById("highlight-suggestion")?.textContent.length ?? 0;
+        startIdxInFullPassage = beforeLength + suggestionLength + selection.anchorOffset;
       }
-      const endIdxInFullPassage =
-        startIdxInFullPassage + selection.toString().length;
+      const endIdxInFullPassage = startIdxInFullPassage + selection.toString().length;
 
       // Hide suggestion so the passage DOM becomes a single text node again
       setShowHighlightSuggestionFor(null);
@@ -283,9 +263,7 @@ const CodingCardContent = () => {
           rangeAfterDomUpdate.setStart(textNode, startIdxInFullPassage);
           rangeAfterDomUpdate.setEnd(textNode, endIdxInFullPassage);
         } else {
-          console.warn(
-            "Text node not found in passage during user highlight handling."
-          );
+          console.warn("Text node not found in passage during user highlight handling.");
           return; // Fallback: do nothing if text node not found
         }
         createNewPassage(rangeAfterDomUpdate);
@@ -360,8 +338,7 @@ const CodingCardContent = () => {
     const dataIsCSVWithHeaders =
       dataIsCSV && csvHeaders !== null && csvHeaders.length > 0;
     const isInExamples =
-      fewShotExamples.find((example) => example.passageId === p.id) !==
-      undefined;
+      fewShotExamples.find((example) => example.passageId === p.id) !== undefined;
 
     return (
       <div
@@ -370,6 +347,10 @@ const CodingCardContent = () => {
           e.stopPropagation(); // Prevent triggering parent onMouseDown
           // If there is an ongoing highlight suggestion fetch, do nothing
           if (isProcessingPendingRef.current) return;
+          if (clickedExampleBlobRef.current) {
+            clickedExampleBlobRef.current = false;
+            return;
+          }
           if (!p.isHighlighted) {
             setActiveCodeId(null);
             setShowHighlightSuggestionFor(p.id);
@@ -390,11 +371,12 @@ const CodingCardContent = () => {
           )}
           {p.isHighlighted && (
             <form
+              onMouseDown={() => clickedExampleBlobRef.current = true}
               className={`
-               bg-tertiaryContainer inline-block gap-1 rounded-sm w-fit h-fit px-1.5 mr-1
+                bg-tertiaryContainer inline-block gap-1 rounded-sm w-fit h-fit px-1.5 mr-1
                 ${
                   isInExamples
-                    ? "outline-3 outline-[#006851] text-onBackground"
+                    ? "outline-3 -outline-offset-2 outline-[#006851] text-onBackground"
                     : "outline-1 outline-outline"
                 }
                 ${
@@ -402,7 +384,7 @@ const CodingCardContent = () => {
                     ? "bg-tertiaryContainerHover"
                     : ""
                 }
-             `}
+              `}
             >
               <input
                 id={`checkbox-${p.id}`}
@@ -412,9 +394,7 @@ const CodingCardContent = () => {
                   setFewShotExamples((prev) => {
                     if (prev.find((example) => example.passageId === p.id)) {
                       // If already in few-shot examples, remove it
-                      return prev.filter(
-                        (example) => example.passageId !== p.id
-                      );
+                      return prev.filter((example) => example.passageId !== p.id);
                     } else {
                       // Else, add it
                       return [
@@ -432,8 +412,7 @@ const CodingCardContent = () => {
                           codedPassage: p.text,
                           codes: p.codeIds
                             .map(
-                              (codeId) =>
-                                codes.find((code) => code.id === codeId)?.code
+                              (codeId) => codes.find((code) => code.id === codeId)?.code
                             )
                             .filter(Boolean) as string[],
                         },
@@ -441,7 +420,6 @@ const CodingCardContent = () => {
                     }
                   })
                 }
-                onClick={(e) => e.stopPropagation()} // Prevent codeBlob from losing focus
                 className="accent-[#006851]"
               />
               <label htmlFor={`checkbox-${p.id}`} className="ml-1">
@@ -457,15 +435,9 @@ const CodingCardContent = () => {
                   ? "bg-tertiaryContainer rounded-sm w-fit mr-1 cursor-default"
                   : ""
               }
+              ${isInExamples ? "border-l-7 pl-1 border-[#006851]" : ""}
               ${
-                isInExamples
-                  ? "border-l-7 pl-1 border-[#006851]"
-                  : ""
-              }
-              ${
-                p.isHighlighted &&
-                activeCodeId &&
-                p.codeIds.includes(activeCodeId)
+                p.isHighlighted && activeCodeId && p.codeIds.includes(activeCodeId)
                   ? "bg-tertiaryContainerHover rounded-sm decoration-onBackground"
                   : ""
               }
@@ -492,6 +464,7 @@ const CodingCardContent = () => {
                   setActiveCodeId={setActiveCodeId}
                   setPendingHighlightFetches={setPendingHighlightFetches}
                   clickedSuggestionsToggleRef={clickedSuggestionsToggleRef}
+                  clickedExampleBlobRef={clickedExampleBlobRef}
                   isLastCodeOfPassage={index === p.codeIds.length - 1}
                   codeManager={codeManager}
                   suggestionsManager={suggestionsManager}
@@ -506,9 +479,7 @@ const CodingCardContent = () => {
     );
   };
 
-  const handleDisplayedColumnChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
+  const handleDisplayedColumnChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setDisplayedColumn(e.target.value);
   };
 
@@ -548,14 +519,9 @@ const CodingCardContent = () => {
       </div>
       <div className="flex flex-col items-center gap-4 h-fit w-fit min-w-50 max-w-sm">
         <Codebook codeManager={codeManager} />
-        <CodingSettingsCard
-          clickedSuggestionsToggleRef={clickedSuggestionsToggleRef}
-        />
+        <CodingSettingsCard clickedSuggestionsToggleRef={clickedSuggestionsToggleRef} />
         {isFetchingHighlightSuggestion && !activeCodeId && (
-          <InfoBox
-            msg="Fetching highlight suggestion..."
-            variant="loading"
-          ></InfoBox>
+          <InfoBox msg="Fetching highlight suggestion..." variant="loading"></InfoBox>
         )}
       </div>
     </div>

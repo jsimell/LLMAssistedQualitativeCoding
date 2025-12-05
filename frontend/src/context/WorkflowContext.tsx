@@ -176,6 +176,25 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
     });
   }, [codes]);
 
+  // Ensure that fewShotExamples only contains examples for passages that still exist, and that it contains up-to-date codes
+  useEffect(() => {
+    setFewShotExamples((prev) => {
+      const filtered = prev.filter((example) =>
+        passages.some((p) => p.id === example.passageId)
+      );
+      // Ensure up-to-date codes for each example
+      return filtered.map((example) => {
+        const passage = passages.find((p) => p.id === example.passageId);
+        if (!passage) return example; // Should not happen due to filtering above
+        const exampleCodes = passage.codeIds.map((codeId) => 
+          codes.find((c) => c.id === codeId)?.code || "").filter((c) => c !== "");
+        return {
+          ...example,
+          codes: exampleCodes,
+        };
+      });
+    });
+  }, [codes, passages]);
 
   // On change of current step, mark it as visited
   useEffect(() => {

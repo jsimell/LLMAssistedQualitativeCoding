@@ -20,6 +20,7 @@ export const usePrompts = () => {
     fewShotExamples,
     codebook,
     contextInfo,
+    passages,
     codes,
   } = context;
 
@@ -51,16 +52,16 @@ ${
 }
 
 ## TASK
-1. Review the codebook and examples to understand the user's coding style.
-2. Below you will find your SEARCH AREA for the next passage to code. Find the FIRST subpassage that provides meaningful insight related to the research context.
-  - You must select the FIRST relevant passage, not necessarily the most relevant one.
+1) Review the codebook and examples to understand the user's coding style.
+2) Below you will find your SEARCH AREA for the next passage to code. Find the FIRST subpassage that provides meaningful insight related to the research context.
+  - IMPORTANT: always select the FIRST relevant passage in the SEARCH AREA, not necessarily the most relevant one.
   - Selection style (length, cropping, detail) should mimic the examples.
-3. Assign 1-5 relevant codes:
+3) Assign 1-5 relevant codes:
   - Mimic the coding style (e.g., language, conciseness, level of abstraction, casing) of the examples.
   - Prefer codebook codes; create new codes only if needed, matching the user's coding style.
   - Cover all important aspects, but avoid overcoding.
-4. If no relevant passage is found, return an empty string for "passage" and an empty array for "codes".
-5. Validate that the selected passage is an exact, case-sensitive substring of the SEARCH AREA.
+4) If no relevant passage is found, return an empty string for "passage" and an empty array for "codes".
+5) Validate that the selected passage is an exact, case-sensitive substring of the SEARCH AREA.
 ${
   codingGuidelines?.trim()
     .length > 0
@@ -75,7 +76,7 @@ Codebook: [${
         .join(", ")}`
     : "No codes in the codebook yet"
 }]
-Few-shot examples of user coded passages (coded passage marked in context with <<< >>>): : 
+Few-shot examples of user coded passages (coded passage marked in context with <<< >>>): 
 [
   ${
     fewShotExamples.length > 0
@@ -188,7 +189,7 @@ Codebook: [${
         .join(", ")}`
     : "No codes in the codebook yet"
 }]
-Few-shot examples of user coded passages (coded passage marked in context with <<< >>>): : 
+Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
 [
   ${
     fewShotExamples.length > 0
@@ -323,7 +324,7 @@ Codebook: [${
         .join(", ")}`
     : "No codes in the codebook yet"
 }]
-Few-shot examples of user coded passages (coded passage marked in context with <<< >>>): : 
+Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
 [
   ${
     fewShotExamples.length > 0
@@ -459,7 +460,7 @@ Codebook: [${
         .join(", ")}`
     : "No codes in the codebook yet"
 }]
-Few-shot examples of user coded passages (coded passage marked in context with <<< >>>): : 
+Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
 [
   ${
     fewShotExamples.length > 0
