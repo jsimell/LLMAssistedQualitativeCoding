@@ -4,6 +4,7 @@ import AccessAPICardContent from './cardContents/AccessAPICardContent'
 import ResearchContextCardContent from './cardContents/ResearchContextCardContent'
 import CodingCardContent from './cardContents/codingStep/CodingCardContent'
 import ResultsCardContent from './cardContents/ResultsCardContent'
+import PromptReviewCardContent from './cardContents/PromptReviewCardContent'
 import { useContext } from 'react'
 import { WorkflowContext } from '../context/WorkflowContext'
 
@@ -28,16 +29,21 @@ function Workspace() {
         </WorkspaceCard>
       )}
       {currentStep === 4 && (
-        <WorkspaceCard title="Step 4: Data Coding">
-          <CodingCardContent />
+        <WorkspaceCard title="Step 4: Prompt Review">
+          <PromptReviewCardContent />
         </WorkspaceCard>
       )}
       {currentStep === 5 && (
-        <WorkspaceCard title="Step 5: Export Results">
+        <WorkspaceCard title="Step 5: Data Coding">
+          <CodingCardContent />
+        </WorkspaceCard>
+      )}
+      {currentStep === 6 && (
+        <WorkspaceCard title="Step 6: Export Results">
           <ResultsCardContent />
         </WorkspaceCard>
       )}
-      {(currentStep < 1 || currentStep > 5) && (
+      {(currentStep < 1 || currentStep > 6) && (
         <WorkspaceCard title="Unknown Step">
           <p>No content</p>
         </WorkspaceCard>

@@ -6,8 +6,9 @@ const Sidebar = () => {
       <StepIndicator label={"Upload Data"} idx={1}/>
       <StepIndicator label={"Access OpenAI API"} idx={2}/>
       <StepIndicator label={"Research Context"} idx={3}/>
-      <StepIndicator label={"Data Coding"} idx={4}/>
-      <StepIndicator label={"Export Results"} idx={5}/>
+      <StepIndicator label={"Prompt Review"} idx={4}/>
+      <StepIndicator label={"Data Coding"} idx={5}/>
+      <StepIndicator label={"Export Results"} idx={6}/>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useContext } from "react";
+import { use, useCallback, useContext } from "react";
 import {
   HighlightSuggestion,
   Passage,
@@ -7,9 +7,10 @@ import {
 } from "../../../../../context/WorkflowContext";
 import { callOpenAIStateless } from "../../../../../services/openai";
 import { getContextForHighlightSuggestions, constructFewShotExamplesString } from "../../utils/passageUtils";
+import { usePrompts } from "./usePrompts";
 
 const MAX_RETRY_ATTEMPTS = 2;
-const OPENAI_MODEL = "gpt-4.1-mini"; // Define the model to use
+const OPENAI_MODEL = "gpt-4.1-nano"; // Define the model to use
 
 export const useHighlightSuggestions = () => {
   // Get global states from the context
@@ -20,6 +21,8 @@ export const useHighlightSuggestions = () => {
     );
   }
 
+  const { generateHighlightSuggestionsPrompt } = usePrompts();
+
   const {
     researchQuestions,
     contextInfo,
@@ -27,134 +30,10 @@ export const useHighlightSuggestions = () => {
     codes,
     codebook,
     apiKey,
-    codingGuidelines,
     uploadedFile,
   } = context;
 
   const dataIsCSV = uploadedFile?.type === "text/csv";
-
-  /** Constructs the system prompt for the AI based on the current context.
-   *
-   * @param passage The passage for which to get the highlight suggestion.
-   * @param precedingText The preceding text of the search area for context.
-   * @param searchArea The search area text where the AI should find the highlight suggestion from.
-   * @returns A string prompt for the AI.
-   */
-  const constructSystemPromptForTextFile = (passage: Passage, precedingText: string, searchArea: string) => {
-  return `
-    ## ROLE
-    You are an expert qualitative coding assistant. Your task is to identify and code the next relevant passage from the SEARCH AREA, using all provided context and examples as guidance. 
-
-    ## RESEARCH CONTEXT
-    Research questions: ${researchQuestions}
-    ${contextInfo ? `Additional research context: ${contextInfo}` : ""}
-
-    ${codingGuidelines?.trim().length > 0 ? `## USER PROVIDED CODING GUIDELINES\n${codingGuidelines}` : ""}
-
-    ## USER'S CODING STYLE
-    Codebook: [${Array.from(codebook).map((code) => `${code}`).join(", ")}]
-    Few-shot examples of user coded passages: [${constructFewShotExamplesString(passage, passages, codes, dataIsCSV)}]
-
-    ## TASK
-    1. Review the codebook and examples to understand the user's coding style.
-    2. Below you will find your SEARCH AREA for the next passage to code. Find the FIRST subpassage that provides meaningful insight related to the research context.
-      - Selection style (length, cropping, detail) should mimic the examples.
-      - It is important to select the FIRST relevant passage, not necessarily the most relevant one.
-    3. Assign 1-5 relevant codes:
-      - Mimic the coding style (e.g., language, conciseness, level of abstraction, casing) of the examples.
-      - Prefer codebook codes; create new codes only if needed, matching the user's coding style.
-      - Cover all important aspects, but avoid overcoding.
-    4. If no relevant passage is found, return an empty string for "passage" and an empty array for "codes".
-    5. Validate that the selected passage is an exact, case-sensitive substring of the SEARCH AREA.
-
-    ## RESPONSE FORMAT
-    Respond ONLY with a valid JavaScript object:
-    {
-      "passage": "exact, case-sensitive substring from SEARCH AREA (escaped for JSON)",
-      "codes": ["code1", "code2", ...]
-    }
-    If no relevant passage is found:
-    {
-      "passage": "",
-      "codes": []
-    }
-    - No explanations or extra text.
-    - No truncation indicators (e.g. "...").
-    - No JSON tags or markdown formatting.
-    - Codes must NOT contain semicolons (;).
-    - Start codes with lowercase unless codebook uses uppercase.
-    - If you suggest a passage, the codes array must never be empty.
-    - Escape special characters in "passage" (e.g. double quotes as \\", newlines as \\n, tabs as \\t).
-    
-    ## CONTEXT WINDOW
-    ${precedingText.trim().length > 0 ?
-    `### PRECEDING TEXT (for understanding only; suggested passage must be a substring of SEARCH AREA)
-    "${precedingText}"
-    ` : ""}
-    ### SEARCH AREA
-    "${searchArea}"
-    `;
-  };
-
-
-  const constructSystemPromptForCSV = (passage: Passage, precedingText: string, searchArea: string) => {
-  return `
-    ## ROLE
-    You are an expert qualitative coding assistant. Your task is to identify and code the next relevant passage from the SEARCH AREA, using all provided context and examples as guidance. 
-    The data is from a CSV file, where rows end with the token "\\u001E".
-
-    ## RESEARCH CONTEXT
-    Research questions: ${researchQuestions}
-    ${contextInfo ? `Additional research context: ${contextInfo}` : ""}
-
-    ${codingGuidelines?.trim().length > 0 ? `## USER PROVIDED CODING GUIDELINES\n${codingGuidelines}` : ""}
-
-    ## USER'S CODING STYLE
-    Codebook: [${Array.from(codebook).map((code) => `${code}`).join(", ")}]
-    Few-shot examples of user coded passages: [${constructFewShotExamplesString(passage, passages, codes, dataIsCSV) || "No user coded passages yet."}]
-
-    ## TASK
-    1. Review the codebook and examples to understand the user's coding style.
-    2. Find the FIRST subpassage in the SEARCH AREA that provides meaningful insight related to the research context.
-      - Selection style (length, cropping, detail) should mimic the examples.
-      - The search area may start mid-row; if so, ensure your selected passage does not include any text before the start of the search area.
-      - The suggested passage must NOT span over multiple CSV rows (i.e. the end of row token \\u001E must never occur in the middle of your suggestion).
-    3. Coding:
-       - If you find a relevant passage, assign **1-5 codes** to it.
-       - If you cannot assign at least one code, **do not suggest that passage**.
-       - Prefer codebook codes; create new codes only if needed, matching the user's coding style.
-       - Cover important aspects, but avoid overcoding.
-    4. If there is **no codeable passage** in the SEARCH AREA, return an empty passage and empty codes.
-
-    ## RESPONSE FORMAT
-    Respond ONLY with a valid JavaScript object:
-    {
-      "passage": "exact, case-sensitive substring from SEARCH AREA (escaped for JSON)",
-      "codes": ["code1", "code2", ...]
-    }
-    If no relevant passage is found:
-    {
-      "passage": "",
-      "codes": []
-    }
-    - No explanations or extra text.
-    - No truncation indicators (e.g. "...").
-    - Codes must NOT contain semicolons (;).
-    - Start codes with lowercase unless codebook uses uppercase.
-    - The "passage" MUST be an exact, case-sensitive substring of the SEARCH AREA.
-    - Escape special characters in "passage" (e.g. double quotes as \\", newlines as \\n, tabs as \\t).
-    - Do not include the end of row token \\u001E in your response.
-    
-    ## CONTEXT WINDOW
-    ${precedingText.trim().length > 0 ?
-    `### PRECEDING TEXT (for understanding only; suggested passage must be a substring of SEARCH AREA)
-    "${precedingText}"
-    ` : ""}
-    ### SEARCH AREA
-    "${searchArea}"
-    `;
-  };
-
 
   /**
    * A helper for ensuring that the LLM's highlight suggestion response is valid.
@@ -229,9 +108,7 @@ export const useHighlightSuggestions = () => {
 
         const response = await callOpenAIStateless(
           apiKey,
-          dataIsCSV
-            ? constructSystemPromptForCSV(startPassage, precedingText, searchArea) + clarificationMessage
-            : constructSystemPromptForTextFile(startPassage, precedingText, searchArea) + clarificationMessage,
+          generateHighlightSuggestionsPrompt(dataIsCSV, precedingText, searchArea) + clarificationMessage,
           OPENAI_MODEL
         );
 

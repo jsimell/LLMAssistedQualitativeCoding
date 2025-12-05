@@ -44,6 +44,15 @@ export interface HighlightSuggestion {
   codes: string[];
 }
 
+export interface FewShotExample {
+  passageId: PassageId;
+  context: string;
+  codedPassage: string;
+  codes: string[];
+}
+
+export type PromptType = "highlight" | "code" | "autocomplete";
+
 type Setter<T> = React.Dispatch<React.SetStateAction<T>>;
 
 export const WorkflowContext = createContext<WorkflowContextType | undefined>(
@@ -74,6 +83,9 @@ export interface WorkflowContextType {
 
   parsedCSVdata: string[][];
   setParsedCSVdata: Setter<string[][]>;
+
+  reviewedPromptType: PromptType;
+  setReviewedPromptType: Setter<PromptType>;
 
   currentStep: number;
   setCurrentStep: Setter<number>;
@@ -110,6 +122,9 @@ export interface WorkflowContextType {
 
   contextWindowSize: number | null;
   setContextWindowSize: Setter<number | null>;
+
+  fewShotExamples: FewShotExample[];
+  setFewShotExamples: Setter<FewShotExample[]>;
 }
 
 export function WorkflowProvider({ children }: { children: React.ReactNode }) {
@@ -124,6 +139,9 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   const [rawData, setRawData] = useState<string>("");
   const [csvHeaders, setCsvHeaders] = useState<string[] | null>(null);
   const [parsedCSVdata, setParsedCSVdata] = useState<string[][]>([]);
+
+  // Prompt review states
+  const [reviewedPromptType, setReviewedPromptType] = useState<PromptType>("highlight");
 
   // Workflow progression states
   const [currentStep, setCurrentStep] = useState<number>(1); // The current step of the workflow
@@ -142,6 +160,7 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   const [contextWindowSize, setContextWindowSize] = useState<number | null>(
     500
   ); // Number of characters in the context window for AI suggestions
+  const [fewShotExamples, setFewShotExamples] = useState<FewShotExample[]>([]); // Few-shot examples for AI suggestions
 
 
   // Ensure that all the distinct codes in 'codes' are also in 'codebook'
@@ -182,6 +201,8 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
     setCsvHeaders,
     parsedCSVdata,
     setParsedCSVdata,
+    reviewedPromptType,
+    setReviewedPromptType,
     currentStep,
     setCurrentStep,
     proceedAvailable,
@@ -206,6 +227,8 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
     setAiSuggestionsEnabled,
     contextWindowSize,
     setContextWindowSize,
+    fewShotExamples,
+    setFewShotExamples,
   };
 
   // Make the states available to all children components
