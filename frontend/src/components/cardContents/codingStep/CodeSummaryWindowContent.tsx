@@ -35,7 +35,7 @@ const CodeSummaryWindowContent = ({ showCodeSummaryFor, setShowCodeSummaryFor, d
           const passageStartIdx = context.indexOf(passage.text);
           return (
             <>
-              <div key={passage.id} className="mb-4">
+              <div key={c.id} className="mb-4">
                 <span>{context.slice(0, passageStartIdx)}</span>
                 <span className="bg-tertiaryContainer rounded-sm w-fit mr-1">{context.slice(passageStartIdx, passageStartIdx + passage.text.length)}</span>
                 <span>{context.slice(passageStartIdx + passage.text.length)}</span>
