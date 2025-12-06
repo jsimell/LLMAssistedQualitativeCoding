@@ -17,7 +17,7 @@ const Button = ({label, onClick, icon: Icon, iconPosition="end", variant="primar
 
   return (
     <button 
-      onClick={onClick}
+      onClick={variant === "disabled" ? undefined : onClick}
       title={title}  // Defines the hover message
       className={`flex items-center justify-center w-fit h-fit text-base font-medium text-nowrap gap-2 px-3.5 py-2 rounded-xl shadow-md ${variants[variant]}`}
     >
