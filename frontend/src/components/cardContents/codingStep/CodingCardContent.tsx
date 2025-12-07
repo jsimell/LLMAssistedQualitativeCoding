@@ -33,6 +33,7 @@ const CodingCardContent = () => {
     setProceedAvailable,
     fewShotExamples,
     setFewShotExamples,
+    setVisitedSteps,
   } = context;
 
   // Custom hooks
@@ -74,9 +75,17 @@ const CodingCardContent = () => {
   // Keep a stable ref to the latest fetch function to avoid effect re-trigger on identity changes
   const inclusiveFetchRef = useRef(inclusivelyFetchHighlightSuggestionAfter);
 
-  /** Proceed should be available by default */
+  /** 
+   * Proceed should be available by default.
+   * Also, make it possible to proceed to the next step through the sidebar as well
+  */
   useEffect(() => {
     setProceedAvailable(true);
+    setVisitedSteps((prev) => {
+      const updated = new Set(prev);
+      updated.add(6); // 6 is the next step after this one
+      return updated;
+    });
   }, []);
 
   /**

@@ -183,7 +183,7 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
           />
         </div>
         <div className="flex gap-2 items-center justify-between w-full">
-          <p>Few-shot examples:</p>
+          <p>Examples for the AI:</p>
           <form className="flex gap-3">
             <div className="flex flex-col">
               <label htmlFor="random" className="font-medium">
@@ -281,10 +281,10 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
         onClose={() => setShowExamplesSelectionWindow(false)}
       >
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col px-4 pb-6">
+          <div className="flex flex-col px-4">
             <div className="flex flex-col">
-              <div className="flex justify-between items-center bg-background pt-2 pb-6 z-10">
-                <p className="text-lg font-semibold">Select few-shot examples below:</p>
+              <div className="flex justify-between items-center gap-20 bg-background pt-2 pb-6 z-10">
+                <p className="text-lg font-semibold">Select examples for the AI</p>
                 <XMarkIcon
                   title="Close window"
                   className="w-8 h-8 p-0.5 flex-shrink-0 rounded-full text-black hover:bg-gray-700/10 cursor-pointer stroke-2"
@@ -352,7 +352,14 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
                             });
                           }}
                         />
-                        <div key={passage.id} className={`pr-6 ${isInExamples ? "border-l-7 pl-2 rounded-l-sm border-[#006851]" : ""}`}>
+                        <div
+                          key={passage.id}
+                          className={`pr-6 ${
+                            isInExamples
+                              ? "border-l-7 pl-2 rounded-l-sm border-[#006851]"
+                              : ""
+                          }`}
+                        >
                           <span>{context.slice(0, passageStartIdx)}</span>
                           <span className="bg-tertiaryContainer rounded-sm w-fit mr-1">
                             {context.slice(
@@ -380,6 +387,11 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
                     </>
                   );
                 })}
+            {passages.filter((p) => p.isHighlighted).length === 0 && (
+              <p className="text-center px-6">
+                You must code some passages to be able to select examples.
+              </p>
+            )}
             </div>
             <div className="flex justify-center py-6 w-full">
               <Button
