@@ -113,10 +113,10 @@ const Codebook = ({ codeManager }: CodebookProps) => {
 
   return (
     <div className="flex flex-col items-center w-full h-fit rounded-lg border-1 border-outline">
-      <div className="flex h-fit w-full items-center justify-center px-4.5 pt-4 pb-3.5 border-b border-outline rounded-t-lg bg-container text-primary">
+      <div className="flex h-fit w-full items-center justify-center px-4.5 pt-2.5 pb-2 border-b border-outline rounded-t-lg bg-container text-primary">
         <p className="text-lg font-semibold">Codebook</p>
       </div>
-      <div className="flex flex-col w-full px-6 py-4 items-center">
+      <div className="flex flex-col w-full p-6 items-center">
         {codebookArray.length === 0 && 
           <div className="flex flex-col items-center gap-3 pb-1.5">
             <p className="max-w-[60%] text-center">Add codes by highlighting passages in the data.</p>
@@ -138,10 +138,15 @@ const Codebook = ({ codeManager }: CodebookProps) => {
             />
           </div>
         }
-        {usedCodes.map((code) => (
-          <CodeBookRow key={code} code={code} codeManager={codeManager} count={getCodeCount(code)} setShowCodeSummaryFor={setShowCodeSummaryFor}  />
-        ))}
-        {unusedCodes.length > 0 && <p className="self-start pb-1 pt-4 font-medium">Unused codes:</p>}
+        {usedCodes.map((code, index) => {
+          return (
+            <>
+              <CodeBookRow key={code} code={code} codeManager={codeManager} count={getCodeCount(code)} setShowCodeSummaryFor={setShowCodeSummaryFor}  />
+              {index === usedCodes.length - 1 ? <div className="pb-4"></div> : <></>}
+            </>
+          );
+        })}
+        {unusedCodes.length > 0 && <p className="self-start pb-1 font-medium">Unused codes:</p>}
         {codebookArray.filter(c => getCodeCount(c) === 0).map((code) => (
           <CodeBookRow key={code} code={code} codeManager={codeManager} count={getCodeCount(code)} setShowCodeSummaryFor={setShowCodeSummaryFor} />
         ))}

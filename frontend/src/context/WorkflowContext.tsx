@@ -120,11 +120,23 @@ export interface WorkflowContextType {
   aiSuggestionsEnabled: boolean;
   setAiSuggestionsEnabled: Setter<boolean>;
 
-  contextWindowSize: number | null;
-  setContextWindowSize: Setter<number | null>;
+  codeSuggestionContextWindowSize: number | null;
+  setCodeSuggestionContextWindowSize: Setter<number | null>;
+
+  highlightSuggestionContextWindowSize: number | null;
+  setHighlightSuggestionContextWindowSize: Setter<number | null>;
 
   fewShotExamples: FewShotExample[];
   setFewShotExamples: Setter<FewShotExample[]>;
+
+  fewShotExamplesSelectionMode: "random" | "manual";
+  setFewShotExamplesSelectionMode: Setter<"random" | "manual">;
+
+  randomFewShotExamplesCount: number;
+  setRandomFewShotExamplesCount: Setter<number>;
+
+  showCodingInstructionsOverlay: boolean;
+  setShowCodingInstructionsOverlay: Setter<boolean>;
 }
 
 export function WorkflowProvider({ children }: { children: React.ReactNode }) {
@@ -157,10 +169,16 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   const [nextPassageIdNumber, setNextPassageIdNumber] = useState<number>(0); // Next unique id for a new passage
   const [activeCodeId, setActiveCodeId] = useState<CodeId | null>(null);
   const [aiSuggestionsEnabled, setAiSuggestionsEnabled] = useState<boolean>(true); // Global toggle
-  const [contextWindowSize, setContextWindowSize] = useState<number | null>(
+  const [codeSuggestionContextWindowSize, setCodeSuggestionContextWindowSize] = useState<number | null>(
     500
-  ); // Number of characters in the context window for AI suggestions
+  ); // Number of characters in the context window ffor code and autocomplete suggestions
+  const [highlightSuggestionContextWindowSize, setHighlightSuggestionContextWindowSize] = useState<number | null>(
+    500
+  ); // Number of characters in the context window for highlight suggestions
   const [fewShotExamples, setFewShotExamples] = useState<FewShotExample[]>([]); // Few-shot examples for AI suggestions
+  const [fewShotExamplesSelectionMode, setFewShotExamplesSelectionMode] = useState<"random" | "manual">("random");
+  const [randomFewShotExamplesCount, setRandomFewShotExamplesCount] = useState<number>(10);
+  const [showCodingInstructionsOverlay, setShowCodingInstructionsOverlay] = useState<boolean>(false);
 
 
   // Ensure that all the distinct codes in 'codes' are also in 'codebook'
@@ -244,10 +262,18 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
     setActiveCodeId,
     aiSuggestionsEnabled,
     setAiSuggestionsEnabled,
-    contextWindowSize,
-    setContextWindowSize,
+    codeSuggestionContextWindowSize,
+    setCodeSuggestionContextWindowSize,
+    highlightSuggestionContextWindowSize,
+    setHighlightSuggestionContextWindowSize,
     fewShotExamples,
     setFewShotExamples,
+    fewShotExamplesSelectionMode,
+    setFewShotExamplesSelectionMode,
+    randomFewShotExamplesCount,
+    setRandomFewShotExamplesCount,
+    showCodingInstructionsOverlay,
+    setShowCodingInstructionsOverlay,
   };
 
   // Make the states available to all children components

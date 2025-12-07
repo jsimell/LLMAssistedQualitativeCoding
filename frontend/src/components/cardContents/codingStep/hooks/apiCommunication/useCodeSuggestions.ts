@@ -29,7 +29,7 @@ export const useCodeSuggestions = () => {
     codes,
     apiKey,
     passages,
-    contextWindowSize,
+    codeSuggestionContextWindowSize,
     codingGuidelines,
   } = context;
 
@@ -37,11 +37,11 @@ export const useCodeSuggestions = () => {
 
   const dataIsCSV = uploadedFile?.type === "text/csv";
 
-  const precedingContextSize = contextWindowSize
-    ? Math.floor(contextWindowSize * PRECEDING_CONTEXT_RATIO)
+  const precedingContextSize = codeSuggestionContextWindowSize
+    ? Math.floor(codeSuggestionContextWindowSize * PRECEDING_CONTEXT_RATIO)
     : 350;
-  const trailingContextSize = contextWindowSize
-    ? Math.floor(contextWindowSize * TRAILING_CONTEXT_RATIO)
+  const trailingContextSize = codeSuggestionContextWindowSize
+    ? Math.floor(codeSuggestionContextWindowSize * TRAILING_CONTEXT_RATIO)
     : 150;
 
   /**
@@ -103,7 +103,7 @@ export const useCodeSuggestions = () => {
       researchQuestions,
       contextInfo,
       codebook,
-      contextWindowSize,
+      codeSuggestionContextWindowSize,
     ]
   );
 
@@ -169,7 +169,7 @@ export const useCodeSuggestions = () => {
       researchQuestions,
       contextInfo,
       codebook,
-      contextWindowSize,
+      codeSuggestionContextWindowSize,
     ]
   );
 

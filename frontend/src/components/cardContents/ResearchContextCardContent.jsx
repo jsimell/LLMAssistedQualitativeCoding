@@ -77,7 +77,7 @@ const ResearchContextCardContent = () => {
             value={currentRQs}
             onChange={(e) => setCurrentRQs(e.target.value)}
             type="text"
-            className="border-1 border-outline rounded-sm p-1 w-full h-fit"
+            className="border-1 border-outline rounded-sm p-1 w-full h-fit accent-[#006851]"
             required
           />
         </div>
@@ -88,7 +88,7 @@ const ResearchContextCardContent = () => {
             value={currentContextInfo}
             onChange={(e) => setCurrentContextInfo(e.target.value)}
             type="text"
-            className="border-1 border-outline rounded-sm p-1"
+            className="border-1 border-outline rounded-sm p-1 accent-[#006851]"
           />
         </div>
       <div className="flex justify-center">

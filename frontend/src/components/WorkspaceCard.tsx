@@ -1,0 +1,51 @@
+import { useContext } from "react";
+import StepNavigationButtons from "./StepNavigationButtons";
+import WorkspaceCardHeader from "./WorkspaceCardHeader";
+import { WorkflowContext } from "../context/WorkflowContext";
+
+interface WorkspaceCardProps {
+  title: string;
+  children: React.ReactNode;
+  headerButtonLabel?: string;
+  headerButtonIcon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  headerButtonIconPosition?: "start" | "end";
+  onHeaderButtonClick?: () => void;
+}
+
+const WorkspaceCard = ({
+  title,
+  children,
+  headerButtonLabel,
+  headerButtonIcon,
+  headerButtonIconPosition,
+  onHeaderButtonClick,
+}: WorkspaceCardProps) => {
+  const context = useContext(WorkflowContext);
+  if (!context) {
+    throw new Error("WorkspaceCard must be used within a WorkflowContext provider");
+  }
+  const { currentStep } = context;
+
+  return (
+    <div className="flex flex-col h-full w-full border-1 rounded-xl border-outline shadow-sm">
+      <WorkspaceCardHeader
+        title={title}
+        buttonLabel={headerButtonLabel}
+        buttonIcon={headerButtonIcon}
+        buttonIconPosition={headerButtonIconPosition}
+        onButtonClick={onHeaderButtonClick}
+      />
+      <div className="flex flex-col flex-1 px-12 py-12 items-center bg-background text-onBackground text-base rounded-b-xl">
+        {children}
+      </div>
+      <div className="flex-1 flex items-end pb-7 px-7 gap-7">
+        <StepNavigationButtons
+          hidePrev={currentStep === 1}
+          hideNext={currentStep === 6}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default WorkspaceCard;

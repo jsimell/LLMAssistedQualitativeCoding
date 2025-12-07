@@ -3,6 +3,7 @@ import {
   Passage,
   WorkflowContext,
 } from "../../../../../context/WorkflowContext";
+import { getPassageWithSurroundingContext } from "../../utils/passageUtils";
 
 export const usePrompts = () => {
   const context = useContext(
@@ -22,7 +23,84 @@ export const usePrompts = () => {
     contextInfo,
     passages,
     codes,
+    fewShotExamplesSelectionMode,
+    randomFewShotExamplesCount
   } = context;
+
+  const constructFewShotExamplesString = (dataIsCSV: boolean): string => {
+    // Common helper to escape strings for embedding in the prompt
+    const escapeForPrompt = (value: string) =>
+      value
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n")
+        .replace(/\t/g, "\\t");
+
+    if (fewShotExamplesSelectionMode === "manual") {
+      // Manual selection mode
+      if (fewShotExamples.length === 0) {
+        return "No few-shot examples specified yet";
+      }
+
+      const examplesString = fewShotExamples
+        .map(
+          (example) =>
+            `{
+  codedPassage: "${escapeForPrompt(example.codedPassage)}",
+  codes: [${example.codes
+    .map((code) => `"${escapeForPrompt(code)}"`)
+    .join(", ")}],
+  context: "${escapeForPrompt(example.context)}",
+}`
+        )
+        .join(",\n");
+
+      return `[${examplesString}]`;
+    } else {
+      // Random selection mode
+      const randomPassages = passages
+        .filter((p) => p.codeIds.length > 0)
+        .sort(() => 0.5 - Math.random())
+        .slice(0, randomFewShotExamplesCount)
+        .map((p) => {
+          const codedPassage = p.text;
+          const passageCodes = p.codeIds
+            .map((cid) => codes.find((c) => c.id === cid)?.code || "")
+            .filter(Boolean);
+          const surroundingContext = getPassageWithSurroundingContext(
+            p,
+            passages,
+            50,
+            20,
+            true,
+            dataIsCSV
+          );
+          return {
+            codedPassage,
+            codes: passageCodes,
+            context: surroundingContext,
+          };
+        });
+
+      if (randomPassages.length === 0) {
+        return "No few-shot examples specified yet";
+      }
+
+      const examplesString = randomPassages
+        .map(
+          (example) =>
+            `{
+  codedPassage: "${escapeForPrompt(example.codedPassage)}",
+  codes: [${example.codes
+    .map((code) => `"${escapeForPrompt(code)}"`)
+    .join(", ")}],
+  context: "${escapeForPrompt(example.context)}",
+}`
+        )
+        .join(",\n");
+
+      return `[\n${examplesString}\n]`;
+    }
+  }
 
   /**
    * Retrieves the prompt for highlight suggestions based on the uploaded data format. Uses the current context for dynamic generation.
@@ -77,42 +155,7 @@ Codebook: [${
     : "No codes in the codebook yet"
 }]
 Few-shot examples of user coded passages (coded passage marked in context with <<< >>>): 
-[
-  ${
-    fewShotExamples.length > 0
-      ? fewShotExamples
-          .map(
-            (example) =>
-              `{
-        codedPassage: "${example.codedPassage
-          .replace(/"/g, '\\"')
-          .replace(/\n/g, "\\n")
-          .replace(
-            /\t/g,
-            "\\t"
-          )}",
-        codes: [${example.codes
-          .map(
-            (code) =>
-              `"${code.replace(
-                /"/g,
-                '\\"'
-              )}"`
-          )
-          .join(", ")}],
-        context: "${example.context
-          .replace(/"/g, '\\"')
-          .replace(/\n/g, "\\n")
-          .replace(
-            /\t/g,
-            "\\t"
-          )}",
-      }`
-          )
-          .join(",\n")
-      : "No few-shot examples specified yet"
-  }
-]
+${constructFewShotExamplesString(dataIsCSV)}
 
 ## RESPONSE FORMAT
 Respond ONLY with a valid JavaScript object:
@@ -190,42 +233,7 @@ Codebook: [${
     : "No codes in the codebook yet"
 }]
 Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
-[
-  ${
-    fewShotExamples.length > 0
-      ? fewShotExamples
-          .map(
-            (example) =>
-              `{
-        codedPassage: "${example.codedPassage
-          .replace(/"/g, '\\"')
-          .replace(/\n/g, "\\n")
-          .replace(
-            /\t/g,
-            "\\t"
-          )}",
-        codes: [${example.codes
-          .map(
-            (code) =>
-              `"${code.replace(
-                /"/g,
-                '\\"'
-              )}"`
-          )
-          .join(", ")}],
-        context: "${example.context
-          .replace(/"/g, '\\"')
-          .replace(/\n/g, "\\n")
-          .replace(
-            /\t/g,
-            "\\t"
-          )}",
-      }`
-          )
-          .join(",\n")
-      : "No few-shot examples specified yet"
-  }
-]
+${constructFewShotExamplesString(dataIsCSV)}
 
 ## RESPONSE FORMAT
 Respond ONLY with a valid JavaScript object:
@@ -326,42 +334,7 @@ Codebook: [${
     : "No codes in the codebook yet"
 }]
 Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
-[
-  ${
-    fewShotExamples.length > 0
-      ? fewShotExamples
-          .map(
-            (example) =>
-              `{
-        codedPassage: "${example.codedPassage
-          .replace(/"/g, '\\"')
-          .replace(/\n/g, "\\n")
-          .replace(
-            /\t/g,
-            "\\t"
-          )}",
-        codes: [${example.codes
-          .map(
-            (code) =>
-              `"${code.replace(
-                /"/g,
-                '\\"'
-              )}"`
-          )
-          .join(", ")}],
-        context: "${example.context
-          .replace(/"/g, '\\"')
-          .replace(/\n/g, "\\n")
-          .replace(
-            /\t/g,
-            "\\t"
-          )}",
-      }`
-          )
-          .join(",\n")
-      : "No few-shot examples specified yet"
-  }
-]
+${constructFewShotExamplesString(dataIsCSV)}
 
 ## TARGET PASSAGE
 Passage to code: "${
@@ -462,42 +435,7 @@ Codebook: [${
     : "No codes in the codebook yet"
 }]
 Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
-[
-  ${
-    fewShotExamples.length > 0
-      ? fewShotExamples
-          .map(
-            (example) =>
-              `{
-        codedPassage: "${example.codedPassage
-          .replace(/"/g, '\\"')
-          .replace(/\n/g, "\\n")
-          .replace(
-            /\t/g,
-            "\\t"
-          )}",
-        codes: [${example.codes
-          .map(
-            (code) =>
-              `"${code.replace(
-                /"/g,
-                '\\"'
-              )}"`
-          )
-          .join(", ")}],
-        context: "${example.context
-          .replace(/"/g, '\\"')
-          .replace(/\n/g, "\\n")
-          .replace(
-            /\t/g,
-            "\\t"
-          )}",
-      }`
-          )
-          .join(",\n")
-      : "No few-shot examples specified yet"
-  }
-]
+${constructFewShotExamplesString(dataIsCSV)}
 
 ## TARGET PASSAGE
 Passage to code: "${

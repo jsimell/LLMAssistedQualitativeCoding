@@ -57,7 +57,7 @@ const AccessAPICardContent = () => {
             value={currentInput}
             onChange={(e) => setCurrentInput(e.target.value)}
             spellCheck="false" 
-            className="border-1 h-fit flex-1 border-outline rounded-sm p-1 mr-4" 
+            className="border-1 h-fit flex-1 border-outline rounded-sm p-1 mr-4 accent-[#006851]" 
           />
         <Button label="Submit" onClick={handleSubmit} variant={isValidating ? "disabled" : "tertiary"}></Button>
         </form>

@@ -1,5 +1,4 @@
-import React from 'react';
-import Button from './Button';
+import React, { useEffect } from "react";
 
 interface OverlayWindowProps {
   isVisible: boolean;
@@ -18,6 +17,18 @@ const OverlayWindow: React.FC<OverlayWindowProps> = ({
   maxHeight = "max-h-[80vh]",
   children,
 }) => {
+  // Lock background scroll while the overlay is visible
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isVisible]);
+
   if (!isVisible) return null;
 
   return (

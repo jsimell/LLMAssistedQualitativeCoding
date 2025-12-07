@@ -6,7 +6,11 @@ interface CSVsettingsCardProps {
   setCsvHeaders: React.Dispatch<React.SetStateAction<string[] | null>>;
 }
 
-const CSVsettingsCard = ({ parsedCSV, csvHeaders, setCsvHeaders }: CSVsettingsCardProps) => {
+const CSVsettingsCard = ({
+  parsedCSV,
+  csvHeaders,
+  setCsvHeaders,
+}: CSVsettingsCardProps) => {
   const [hasHeaders, setHasHeaders] = useState<boolean | null>(null);
 
   const yesRadioRef = useRef<HTMLInputElement>(null);
@@ -37,18 +41,34 @@ const CSVsettingsCard = ({ parsedCSV, csvHeaders, setCsvHeaders }: CSVsettingsCa
   }, [hasHeaders]);
 
   return (
-      <form className="flex flex-col w-full gap-4">
-        <div className="flex gap-6 justify-between items-center">
-          <label>Does the first row of your CSV file contain headers?</label>
-          <div className="flex gap-2">
-            <label>Yes</label>
-            <input ref={yesRadioRef} className="mr-1" type="radio" name="headerQuery" value="yes" checked={hasHeaders ?? false} onChange={() => setHasHeaders(true)} />
-            <label>No</label>
-            <input ref={noRadioRef} type="radio" name="headerQuery" value="no" checked={hasHeaders === false} onChange={() => setHasHeaders(false)} />
-          </div>
+    <form className="flex flex-col w-full gap-4">
+      <div className="flex gap-6 justify-between items-center">
+        <label>Does the first row of your CSV file contain headers?</label>
+        <div className="flex gap-2">
+          <label>Yes</label>
+          <input
+            ref={yesRadioRef}
+            className="mr-1 accent-[#006851]"
+            type="radio"
+            name="headerQuery"
+            value="yes"
+            checked={hasHeaders ?? false}
+            onChange={() => setHasHeaders(true)}
+          />
+          <label>No</label>
+          <input
+            ref={noRadioRef}
+            className="accent-[#006851]"
+            type="radio"
+            name="headerQuery"
+            value="no"
+            checked={hasHeaders === false}
+            onChange={() => setHasHeaders(false)}
+          />
         </div>
-      </form>
+      </div>
+    </form>
   );
-}
+};
 
 export default CSVsettingsCard;

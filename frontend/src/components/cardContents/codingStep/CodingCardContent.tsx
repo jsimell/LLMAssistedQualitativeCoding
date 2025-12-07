@@ -369,64 +369,6 @@ const CodingCardContent = () => {
           {p.order === 0 && (
             <span className="block my-6 w-full border-t border-outline"></span>
           )}
-          {p.isHighlighted && (
-            <form
-              onMouseDown={() => clickedExampleBlobRef.current = true}
-              className={`
-                bg-tertiaryContainer inline-block gap-1 rounded-sm w-fit h-fit px-1.5 mr-1
-                ${
-                  isInExamples
-                    ? "outline-3 -outline-offset-2 outline-[#006851] text-onBackground"
-                    : "outline-1 outline-outline"
-                }
-                ${
-                  activeCodeId && p.codeIds.includes(activeCodeId)
-                    ? "bg-tertiaryContainerHover"
-                    : ""
-                }
-              `}
-            >
-              <input
-                id={`checkbox-${p.id}`}
-                type="checkbox"
-                checked={isInExamples}
-                onChange={() =>
-                  setFewShotExamples((prev) => {
-                    if (prev.find((example) => example.passageId === p.id)) {
-                      // If already in few-shot examples, remove it
-                      return prev.filter((example) => example.passageId !== p.id);
-                    } else {
-                      // Else, add it
-                      return [
-                        ...prev,
-                        {
-                          passageId: p.id,
-                          context: getPassageWithSurroundingContext(
-                            p,
-                            passages,
-                            50,
-                            20,
-                            true,
-                            dataIsCSV
-                          ),
-                          codedPassage: p.text,
-                          codes: p.codeIds
-                            .map(
-                              (codeId) => codes.find((code) => code.id === codeId)?.code
-                            )
-                            .filter(Boolean) as string[],
-                        },
-                      ];
-                    }
-                  })
-                }
-                className="accent-[#006851]"
-              />
-              <label htmlFor={`checkbox-${p.id}`} className="ml-1">
-                Example
-              </label>
-            </form>
-          )}
           <span
             id={p.id}
             className={`
@@ -435,7 +377,6 @@ const CodingCardContent = () => {
                   ? "bg-tertiaryContainer rounded-sm w-fit mr-1 cursor-default"
                   : ""
               }
-              ${isInExamples ? "border-l-7 pl-1 border-[#006851]" : ""}
               ${
                 p.isHighlighted && activeCodeId && p.codeIds.includes(activeCodeId)
                   ? "bg-tertiaryContainerHover rounded-sm decoration-onBackground"
@@ -518,8 +459,8 @@ const CodingCardContent = () => {
         {passages.map((p) => renderPassage(p))}
       </div>
       <div className="flex flex-col items-center gap-4 h-fit w-fit min-w-50 max-w-sm">
-        <Codebook codeManager={codeManager} />
         <CodingSettingsCard clickedSuggestionsToggleRef={clickedSuggestionsToggleRef} />
+        <Codebook codeManager={codeManager} />
         {isFetchingHighlightSuggestion && !activeCodeId && (
           <InfoBox msg="Fetching highlight suggestion..." variant="loading"></InfoBox>
         )}

@@ -31,6 +31,7 @@ export const useHighlightSuggestions = () => {
     codebook,
     apiKey,
     uploadedFile,
+    highlightSuggestionContextWindowSize
   } = context;
 
   const dataIsCSV = uploadedFile?.type === "text/csv";
@@ -102,7 +103,7 @@ export const useHighlightSuggestions = () => {
           startPassage,
           passages,
           searchStartIndex,
-          1000,
+          highlightSuggestionContextWindowSize ?? 1000,
           dataIsCSV
         );
 

@@ -281,7 +281,7 @@ export const getContextForHighlightSuggestions = (
   }
 
   // Else: passages are not from CSV
-  const precedingSize = Math.floor(minContextWindowSize / 5); // max 20% of context window for preceding text
+  const precedingSize = Math.floor(minContextWindowSize * 0.2); // max 20% of context window for preceding text
   const searchAreaSize = minContextWindowSize - precedingSize; // remaining context window for search area
 
   // If preceding text is already short enough, only cut search area
