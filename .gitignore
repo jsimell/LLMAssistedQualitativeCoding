@@ -1,0 +1,15 @@
+# Python virtual environments
+backend/.venv/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+
+# Node modules (frontend)
+frontend/node_modules/
+
+# Vite build
+frontend/dist/
+
+# Other specific files
+start_dev_env.sh
