@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
-import Button from "./Button";
+import SmallButton from "./SmallButton";
 import StepIndicator from "./StepIndicator"
 
 interface SidebarProps {
@@ -14,8 +14,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }: SidebarProps) => {
     <div className={`${isCollapsed ? "w-25 px-8 py-10" : "w-66 p-10"} fixed h-full flex flex-col items-center gap-6 border-r-1 border-outline bg-container`}>
       <div className="flex w-full justify-center pb-5">
         {isCollapsed  
-          ? <Button label="" icon={ChevronRightIcon} variant="primary" onClick={() => setIsCollapsed(!isCollapsed)} />
-          : <Button label="" icon={ChevronLeftIcon} variant="primary" onClick={() => setIsCollapsed(!isCollapsed)} />
+          ? <SmallButton label="" icon={ChevronRightIcon} variant="primary" onClick={() => setIsCollapsed(!isCollapsed)} />
+          : <SmallButton label="" icon={ChevronLeftIcon} variant="primary" onClick={() => setIsCollapsed(!isCollapsed)} />
         }
       </div>
       <StepIndicator label={"Upload Data"} idx={1} showLabels={!isCollapsed} />
