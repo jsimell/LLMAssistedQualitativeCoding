@@ -7,7 +7,11 @@ import ResultsCardContent from "./cardContents/ResultsCardContent";
 import PromptReviewCardContent from "./cardContents/PromptReviewCardContent";
 import { useContext } from "react";
 import { WorkflowContext } from "../context/WorkflowContext";
-import { QuestionMarkCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowDownTrayIcon,
+  QuestionMarkCircleIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import OverlayWindow from "./OverlayWindow";
 import highlightExample from "../images/highlight-example.png";
 import highlightSuggestionExample from "../images/highlight-suggestion-example.png";
@@ -86,7 +90,9 @@ function Workspace() {
             <p>
               Use your mouse to highlight passages in the data. This will spawn a code
               input where you can add codes for that passage. You can add multiple codes
-              to a passage by separating them in the input with semicolons.
+              to a passage by separating them in the input with semicolons. AI suggestions
+              are shown as ghost text and they can be accepted by pressing the Tab key on
+              your keyboard, or declined with the Escape key.
             </p>
             <div className="flex justify-center w-full py-4 pr-2">
               <img
@@ -96,13 +102,16 @@ function Workspace() {
               />
             </div>
             <p>
-              AI suggestions are shown as ghost text and they can be accepted by pressing
-              the Tab key on your keyboard. Then, once you press enter or click outside
-              the input, code editing is finalized, and the codebook will get updated. If
-              you have AI suggestions enabled, the AI will then suggest the next passage
-              to code. The next highlight suggestion can be accepted with the Tab key, or
-              declined with the Escape key, which triggers the AI to search for the next
-              possible highlight after the declined one.
+              Once you press enter or click outside the input, code editing is finalized,
+              and the codebook will get updated. If you have AI suggestions enabled, the
+              AI will then suggest the next passage to code, which is shown as a gray
+              ghost highlight.
+            </p>
+            <p>
+              Just like code suggestions, the highlight suggestions can also be accepted
+              with the Tab key, and declined with the Escape key. You can also accept the
+              suggestion by clicking the suggested code. Declining triggers the AI to
+              search for the next possible passage to highlight after the declined one.
             </p>
             <div className="flex justify-center w-full py-4 pr-2">
               <img
@@ -113,20 +122,19 @@ function Workspace() {
             </div>
             <h2 className="font-semibold pt-4 text-lg">AI Suggestions Settings</h2>
             <p className="">
-              You can toggle the AI suggestions on/off in the coding settings card. You can
-              also adjust the context window size for the suggestions, define additional
-              coding guidelines that will be included in the suggestion prompts, and
-              define how you want the examples for the AI prompts to be selected.
+              You can toggle the AI suggestions on/off in the coding settings card. You
+              can also adjust the context window size for the suggestions, define
+              additional coding guidelines that will be included in the suggestion
+              prompts, and define how you want the examples for the AI prompts to be
+              selected.
             </p>
             <p>For coding examples, you can either:</p>
             <ul className="list-disc list-inside">
               <li>
-                Let the system select random examples from the coded data, up to
-                a number of your choice.
+                Let the system select random examples from the coded data, up to a number
+                of your choice.
               </li>
-              <li>
-                OR choose manual selection, and define the examples yourself.
-              </li>
+              <li>OR choose manual selection, and define the examples yourself.</li>
             </ul>
             <p>
               The recommended approach is to use random selection until you have so many
@@ -140,17 +148,22 @@ function Workspace() {
               data. All codebook codes, used and unused, are included in the coding
               suggestion prompts.
             </p>
-            <p className="">
-              Note that if you delete all instances of a code in the coding window, the
-              code will still remain in the codebook unless you remove it manually from
-              there as well.
-            </p>
-            <h2 className="font-semibold pt-4 text-lg">Reviewing and Exporting Results</h2>
             <p>
-              You can review and export your coded data in the next step. Exported data
-              will be a CSV file with three columns: context, passage, and codes. If you
-              uploaded a CSV file for coding, the exporting will result in separate CSV
-              files for each column in the original data that you added some codes to.
+              You can download the codebook as a single column CSV file at any time using
+              the download icon (<ArrowDownTrayIcon className="size-5 inline" />) in the
+              top right corner of the codebook card.
+            </p>
+            <h2 className="font-semibold pt-4 text-lg">
+              Reviewing and Exporting Results
+            </h2>
+            <p>
+              In the next step, you can find a bar chart of the frequencies of your codes,
+              and you can export your coded data in CSV format.
+            </p>
+            <p>
+              Exported data will be a CSV file with three columns: Context, Passage, and
+              Codes. If you uploaded a CSV file for coding, the exporting will result in
+              separate CSV files for each column in the data that you added some codes to.
             </p>
           </div>
         </OverlayWindow>
