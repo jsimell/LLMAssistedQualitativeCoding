@@ -193,7 +193,7 @@ const Codebook = ({ codeManager }: CodebookProps) => {
               label=""
               icon={PlusIcon}
               onClick={() => setShowAddCodeInteraction(true)}
-              variant="tertiary"
+              variant="primary"
               />
           </div>
         }
