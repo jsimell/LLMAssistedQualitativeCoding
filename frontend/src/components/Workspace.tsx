@@ -92,7 +92,8 @@ function Workspace() {
               input where you can add codes for that passage. You can add multiple codes
               to a passage by separating them in the input with semicolons. AI suggestions
               are shown as ghost text and they can be accepted by pressing the Tab key on
-              your keyboard, or declined with the Escape key.
+              your keyboard. Pressing the Escape key declines the current suggestion and
+              shows the next one.
             </p>
             <div className="flex justify-center w-full py-4 pr-2">
               <img
@@ -109,9 +110,9 @@ function Workspace() {
             </p>
             <p>
               Just like code suggestions, the highlight suggestions can also be accepted
-              with the Tab key, and declined with the Escape key. You can also accept the
-              suggestion by clicking the suggested code. Declining triggers the AI to
-              search for the next possible passage to highlight after the declined one.
+              with the Tab key, and declined with the Escape key. Declining triggers the
+              AI to search for the next possible passage to highlight after the declined
+              one. Suggestions can also be accepted by clicking the suggested code blob.
             </p>
             <div className="flex justify-center w-full py-4 pr-2">
               <img
