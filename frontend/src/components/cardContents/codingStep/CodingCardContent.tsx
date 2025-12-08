@@ -426,7 +426,7 @@ const CodingCardContent = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-[100vh]">
+    <div className="flex flex-col min-h-[100vh] w-full">
       <div className="flex w-full gap-7 flex-1">
         <div
           onMouseUp={() => {
