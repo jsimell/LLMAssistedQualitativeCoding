@@ -36,7 +36,7 @@ const PromptReviewCardContent = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
         <p className="max-w-[90%]">
           <b>NOTE:</b> This section is for review purposes only to improve transparency.
           Unfortunately the prompts can not be directly edited here. However, in the next
@@ -48,7 +48,7 @@ const PromptReviewCardContent = () => {
           The app uses three kinds of LLM suggestions. Each type has its own prompt and is
           triggered at a different moment in the workflow.
         </p>
-        <ol className="flex max-w-[80%] flex-col gap-3 list-decimal list-inside marker:font-bold">
+        <ol className="flex max-w-[80%] flex-col gap-4 list-decimal list-inside marker:font-bold">
           <li>
             <b>Highlight suggestions:</b> These suggestions propose the next passage to
             highlight, together with an initial coding for the passage. A fetch for
