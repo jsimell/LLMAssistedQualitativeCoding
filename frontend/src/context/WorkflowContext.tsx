@@ -210,7 +210,7 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
       });
       return updated;
     });
-  }, [codebook, importedCodes]);
+  }, [codebook]);
 
   // Ensure that fewShotExamples only contains examples for passages that still exist, and that it contains up-to-date codes
   useEffect(() => {

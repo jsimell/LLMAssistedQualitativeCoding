@@ -16,7 +16,7 @@ interface CodeBookRowProps {
 const CodeBookRow = ({ code, codeManager, count, setShowCodeSummaryFor }: CodeBookRowProps) => {
   if (!code.trim()) return null;
 
-  const { codes, setCodebook } = useContext(WorkflowContext)!; // Non-null assertion since parent already ensures WorkflowContext is provided
+  const { codes, setImportedCodes } = useContext(WorkflowContext)!; // Non-null assertion since parent already ensures WorkflowContext is provided
 
   const [editInputValue, setEditInputValue] = useState(code);
   const [showEditInteraction, setShowEditInteraction] = useState(false);
@@ -51,8 +51,9 @@ const CodeBookRow = ({ code, codeManager, count, setShowCodeSummaryFor }: CodeBo
   const saveChanges = () => {
     const codeCount = codes.filter((c) => (c.code ?? "").trim() === code.trim()).length
     if (codeCount === 0) {
-      // Simply update codebook
-      setCodebook((prev) => {
+      // Since code is not in codes state, it must be an imported code that is unused
+      // Simply update the importedCodes state
+      setImportedCodes((prev) => {
         const updated = new Set(prev);
         updated.delete(code);
         if (editInputValue.trim().length > 0) {
@@ -155,13 +156,13 @@ const CodeBookRow = ({ code, codeManager, count, setShowCodeSummaryFor }: CodeBo
             }
             {count === 0 && 
               <XMarkIcon 
-                title="Delete unused code" 
+                title="Delete unused imported code" 
                 className="w-6 h-6 p-0.5 flex-shrink-0 rounded-full text-red-800 hover:bg-red-700/10 cursor-pointer stroke-3"
                 onClick={() => {
-                  setCodebook(prev => {
-                    const newCodebook = new Set(prev);
-                    newCodebook.delete(code);
-                    return newCodebook;
+                  setImportedCodes(prev => {
+                    const newImportedCodes = new Set(prev);
+                    newImportedCodes.delete(code);
+                    return newImportedCodes;
                   })
                 }}
                 />

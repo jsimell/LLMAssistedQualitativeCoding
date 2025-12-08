@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { WorkflowContext } from "../../../context/WorkflowContext";
 import CodeBookRow from "./CodeBookRow";
-import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { ArrowDownTrayIcon, PlusIcon } from "@heroicons/react/24/outline";
 import SmallButton from "../../SmallButton";
 import { parse } from "papaparse";
 import OverlayWindow from "../../OverlayWindow";
@@ -19,9 +19,12 @@ const Codebook = ({ codeManager }: CodebookProps) => {
   const [rawImportContent, setRawImportContent] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCodeSummaryFor, setShowCodeSummaryFor] = useState<string | null>(null);
+  const [showAddCodeInteraction, setShowAddCodeInteraction] = useState<boolean>(false);
+  const [newCodeInput, setNewCodeInput] = useState<string>("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { codebook, importedCodes, setImportedCodes, setCodebook, codes, passages, uploadedFile } = useContext(WorkflowContext)!;
+  const { codebook, importedCodes, setImportedCodes, codes, uploadedFile } = useContext(WorkflowContext)!;
 
   const dataIsCSV = (uploadedFile && uploadedFile.type === "text/csv") ?? false;
 
@@ -127,6 +130,18 @@ const Codebook = ({ codeManager }: CodebookProps) => {
     URL.revokeObjectURL(url);
   };
 
+  const handleAddNewCode = () => {
+    const trimmedCode = newCodeInput.trim();
+    if (trimmedCode.length === 0 || codebook.has(trimmedCode) || importedCodes.has(trimmedCode)) {
+      setShowAddCodeInteraction(false);
+      setNewCodeInput("");
+      return; // Do not add empty codes
+    }
+    setImportedCodes(new Set([...importedCodes, trimmedCode]));
+    setShowAddCodeInteraction(false);
+    setNewCodeInput("");
+  };
+
   return (
     <div className="flex flex-col sticky top-31 items-center w-full h-fit rounded-lg border-1 border-outline">
       <div className="flex h-fit w-full items-center px-3 pt-2.5 pb-2 border-b border-outline rounded-t-lg bg-container text-primary">
@@ -162,16 +177,52 @@ const Codebook = ({ codeManager }: CodebookProps) => {
         }
         {codebookArray.map((code, index) => {
           return (
-            <>
-              <CodeBookRow key={code} code={code} codeManager={codeManager} count={getCodeCount(code)} setShowCodeSummaryFor={setShowCodeSummaryFor}  />
+            <div key={code} className="w-full">
+              <CodeBookRow code={code} codeManager={codeManager} count={getCodeCount(code)} setShowCodeSummaryFor={setShowCodeSummaryFor}  />
               {index === codebookArray.length - 1 && importedCodesArray.length > 0 ? <div className="pb-4"></div> : <></>}
-            </>
+            </div>
           );
         })}
         {importedCodesArray.length > 0 && <p className="self-start pb-1 font-medium">Unused imported codes:</p>}
         {importedCodesArray.map((code) => (
           <CodeBookRow key={code} code={code} codeManager={codeManager} count={getCodeCount(code)} setShowCodeSummaryFor={setShowCodeSummaryFor} />
         ))}
+        {importedCodesArray.length + codebookArray.length > 0 && !showAddCodeInteraction &&
+          <div className="pt-4 w-full flex justify-center">
+            <SmallButton
+              label=""
+              icon={PlusIcon}
+              onClick={() => setShowAddCodeInteraction(true)}
+              variant="tertiary"
+              />
+          </div>
+        }
+        {showAddCodeInteraction && (
+          <div className="mt-4 w-full flex items-center gap-2">
+            <input
+              type="text"
+              value={newCodeInput}
+              onChange={(e) => setNewCodeInput(e.target.value)}
+              placeholder="Enter new code"
+              className="w-3/4 px-3 py-1 border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <div className="flex gap-2">
+              <SmallButton
+                label="Cancel"
+                onClick={() => {
+                  setShowAddCodeInteraction(false);
+                  setNewCodeInput("");
+                }}
+                variant="outlineTertiary"
+              />
+              <SmallButton
+                label="Add"
+                onClick={handleAddNewCode}
+                variant="tertiary"
+              />
+            </div>
+          </div>
+        )}
       </div>
       <OverlayWindow isVisible={showCodeSummaryFor !== null} onClose={() => setShowCodeSummaryFor(null)} maxWidth="max-w-[60vw]" maxHeight="max-h-[60vh]">
         <CodeSummaryWindowContent 
