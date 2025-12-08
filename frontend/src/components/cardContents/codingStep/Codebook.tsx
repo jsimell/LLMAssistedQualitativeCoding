@@ -111,10 +111,34 @@ const Codebook = ({ codeManager }: CodebookProps) => {
     }
   };
 
+  const handleCodebookDownload = () => {
+    const csvContent = Array.from(codebook)
+      .filter((code) => code ? code.trim().length > 0 : false)
+      .map((code) => `${code}\n`)
+      .join("");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "codebook.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col items-center w-full h-fit rounded-lg border-1 border-outline">
-      <div className="flex h-fit w-full items-center justify-center px-4.5 pt-2.5 pb-2 border-b border-outline rounded-t-lg bg-container text-primary">
+      <div className="flex h-fit w-full items-center px-3 pt-2.5 pb-2 border-b border-outline rounded-t-lg bg-container text-primary">
+        <div className="grow"></div>
         <p className="text-lg font-semibold">Codebook</p>
+        <div className="grow flex justify-end items-center">
+          <ArrowDownTrayIcon 
+            className="size-5.5 stroke-2 cursor-pointer text-primary hover:bg-primary/20 rounded-sm" 
+            onClick={handleCodebookDownload}
+          />
+        </div>
       </div>
       <div className="flex flex-col w-full p-6 items-center">
         {codebookArray.length === 0 && 

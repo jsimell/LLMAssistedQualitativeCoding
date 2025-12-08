@@ -1,6 +1,5 @@
 import { useState, useContext, useEffect, useRef } from "react";
 import {
-  CodeId,
   Passage,
   PassageId,
   WorkflowContext,
@@ -13,7 +12,6 @@ import { useSuggestionsManager } from "./hooks/useSuggestionsManager";
 import InfoBox from "../../InfoBox";
 import { useCodeManager } from "./hooks/useCodeManager";
 import CodingSettingsCard from "./CodingSettingsCard";
-import { getPassageWithSurroundingContext } from "./utils/passageUtils";
 
 const CodingCardContent = () => {
   // Get global states and setters from the context
@@ -23,7 +21,6 @@ const CodingCardContent = () => {
   }
   const {
     passages,
-    codes,
     passagesPerColumn,
     aiSuggestionsEnabled,
     activeCodeId,
@@ -32,7 +29,6 @@ const CodingCardContent = () => {
     csvHeaders,
     setProceedAvailable,
     fewShotExamples,
-    setFewShotExamples,
     setVisitedSteps,
   } = context;
 
@@ -468,10 +464,12 @@ const CodingCardContent = () => {
         {passages.map((p) => renderPassage(p))}
       </div>
       <div className="flex flex-col items-center gap-4 h-fit w-fit min-w-50 max-w-sm">
-        <CodingSettingsCard clickedSuggestionsToggleRef={clickedSuggestionsToggleRef} />
         <Codebook codeManager={codeManager} />
+        <CodingSettingsCard clickedSuggestionsToggleRef={clickedSuggestionsToggleRef} />
         {isFetchingHighlightSuggestion && !activeCodeId && (
-          <InfoBox msg="Fetching highlight suggestion..." variant="loading"></InfoBox>
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+            <InfoBox msg="Fetching highlight suggestion..." variant="loading"></InfoBox>
+          </div>
         )}
       </div>
     </div>
