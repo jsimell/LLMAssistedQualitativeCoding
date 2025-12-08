@@ -1,6 +1,6 @@
 import { useEffect, useContext, useState } from "react";
 import { WorkflowContext } from "../../context/WorkflowContext";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList, Label } from 'recharts';
 import Button from "../Button";
 import { ArrowDownTrayIcon } from "@heroicons/react/24/solid";
 import { getPassageWithSurroundingContext } from "./codingStep/utils/passageUtils";
@@ -81,13 +81,19 @@ const ResultsCardContent = () => {
 
   return (
     <div className="flex items-center gap-4">
-      <BarChart width={1000} height={400} data={data} margin={{ top: 20, right: 30, left: 100, bottom: 150 }}>
+      <BarChart width={1000} height={400} data={data} margin={{ top: 50, right: 30, left: 100, bottom: 150 }}>
         <XAxis dataKey="code" angle={-40} textAnchor="end" tickFormatter={truncateLabel} />
         <YAxis />
         <Tooltip />
         <Bar dataKey="count" fill="#4F6074">
           <LabelList dataKey="count" position="top" />
         </Bar>
+        <Label
+          value="Code Frequencies"
+          position="top"
+          fill="#000000"
+          offset={30}
+        />
       </BarChart>
       <div className="flex flex-col gap-2 items-center max-w-[400px]">
         <p>Download coded passages as a csv file:</p>
