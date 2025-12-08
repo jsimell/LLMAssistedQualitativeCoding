@@ -97,15 +97,15 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
               <HoverMessage className="w-[400px] absolute right-full top-1/2 -translate-y-[10%] mr-1">
                 <div className="flex flex-col gap-4">
                   <p>
-                    The minimum characters that the prompt will include as surrounding
+                    The number of characters that the prompt will include as surrounding
                     context when generating code suggestions for a highlighted passage.
-                    70% of the window goes before the passage, 30% after.
+                    70% of the window goes before the passage, 30% after. A value of 0
+                    means the highlighted passage is included alone with no surrounding
+                    context.
                   </p>
                   <p>
-                    After the minimum characters are reached, the window is cut
-                    intelligently within 100 characters (e.g., at a line break, or
-                    sentence end). A value of 0 means only the highlighted passage is
-                    included in the code suggestions and autocomplete suggestions prompts.
+                    After the specified number of characters are reached, the window is
+                    cut intelligently (e.g., at a line break, or sentence end).
                   </p>
                   <p>
                     Larger windows may improve suggestion relevance but increase response
@@ -154,7 +154,9 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
                   </p>
                   <p>
                     The starting point of the context window is determined based on the
-                    latest entered code or a click on an uncoded section in the data.
+                    latest entered code or a click on an uncoded section in the data, in
+                    which case the AI searches for a suggestion starting from the
+                    beginning of that uncoded section.
                   </p>
                   <p>
                     20% of the context window will be included as preceding context for
@@ -249,8 +251,8 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
                     <p>
                       The system will randomly select the specified number of few-shot
                       examples, if there are that many available. If there are fewer
-                      available examples than the specified number, all available examples
-                      will be used.
+                      available examples than the specified number, all coded passages
+                      will be used as examples.
                     </p>
                     <p>
                       New random examples will be selected for each suggestion request.
@@ -264,7 +266,7 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
         {fewShotExamplesSelectionMode === "manual" && (
           <div className="flex flex-col w-full items-center gap-3 pb-2">
             <SmallButton
-              label="Select examples"
+              label={`${fewShotExamples.length === 0 ? "Select" : "Change"} examples`}
               onClick={() => setShowExamplesSelectionWindow(true)}
               variant="tertiary"
             />
