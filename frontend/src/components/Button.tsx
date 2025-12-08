@@ -11,7 +11,7 @@ const Button = ({label, onClick, icon: Icon, iconPosition="end", variant="primar
   const variants = {
     primary: "bg-primaryButton text-onPrimary cursor-pointer hover:bg-primaryHover border-2 border-transparent",
     tertiary: "bg-tertiary text-onTertiary cursor-pointer hover:bg-tertiaryHover border-2 border-transparent",
-    outlineTertiary: "bg-background text-tertiary border-2 border-tertiary hover:bg-tertiaryHover hover:text-onTertiary cursor-pointer",
+    outlineTertiary: "bg-background text-tertiary border-2 border-tertiary hover:bg-gray-200 cursor-pointer",
     disabled: "bg-gray-100 border-1 border-gray-400 text-gray-500 opacity-70 cursor-not-allowed"
   }
 
