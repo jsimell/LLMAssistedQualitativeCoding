@@ -137,15 +137,21 @@ const CodeBlob = ({
       }
     } else {
       // There is some text after the last semicolon, or the user has typed part of the first code
-      const matchingSuggestion = autocompleteSuggestions.find(
+      const codeAndAutocompleteSuggestions = Array.from(
+        new Set([...codeSuggestions, ...autocompleteSuggestions])
+      );
+      const matchingSuggestion = codeAndAutocompleteSuggestions.find(
         (suggestion) =>
           suggestion
             .toLowerCase()
             .startsWith(afterLastSemicolon.toLowerCase()) &&
           !inputValue.toLowerCase().includes(suggestion.toLowerCase())
       );
+      const inputLastCharIsSpace = inputValue.slice(-1) === " ";
       setGhostText(
-        matchingSuggestion?.slice(afterLastSemicolon.trim().length) || ""
+        inputLastCharIsSpace 
+          ? matchingSuggestion?.slice(afterLastSemicolon.trim().length).trim() || ""
+          : matchingSuggestion?.slice(afterLastSemicolon.trim().length) || ""
       );
     }
   }, [activeCodeId, inputValue, codeSuggestions, autocompleteSuggestions, aiSuggestionsEnabled]);
