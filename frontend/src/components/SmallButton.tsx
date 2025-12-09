@@ -5,7 +5,7 @@ interface SmallButtonProps {
   onClick: () => void;
   icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   iconPosition?: "start" | "end";
-  variant?: "primary" | "tertiary" | "outlineTertiary" | "disabled";
+  variant?: "primary" | "tertiary" | "outlineTertiary" | "outlinePrimary" | "disabled";
   title?: string;
 }
 
@@ -21,6 +21,7 @@ const SmallButton: React.FC<SmallButtonProps> = ({
     primary: "bg-primaryButton text-onPrimary cursor-pointer hover:bg-primaryHover border-2 border-transparent",
     tertiary: "bg-tertiary text-onTertiary cursor-pointer hover:bg-tertiaryHover border-2 border-transparent",
     outlineTertiary: "bg-background text-tertiary border-2 border-tertiary hover:bg-tertiaryHover hover:text-onTertiary cursor-pointer",
+    outlinePrimary: "bg-background text-primary border-2 border-primary hover:bg-gray-200 cursor-pointer",
     disabled: "bg-gray-100 border-2 border-outline text-outline opacity-70 cursor-not-allowed"
   };
 

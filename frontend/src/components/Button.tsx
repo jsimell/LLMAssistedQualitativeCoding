@@ -3,7 +3,7 @@ interface ButtonProps {
   onClick: () => void;
   icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   iconPosition?: "start" | "end";
-  variant?: "primary" | "tertiary" | "outlineTertiary" | "disabled";
+  variant?: "primary" | "tertiary" | "outlineTertiary" | "outlinePrimary" | "disabled";
   title?: string; // Hover message
 }
 
@@ -12,6 +12,7 @@ const Button = ({label, onClick, icon: Icon, iconPosition="end", variant="primar
     primary: "bg-primaryButton text-onPrimary cursor-pointer hover:bg-primaryHover border-2 border-transparent",
     tertiary: "bg-tertiary text-onTertiary cursor-pointer hover:bg-tertiaryHover border-2 border-transparent",
     outlineTertiary: "bg-background text-tertiary border-2 border-tertiary hover:bg-gray-200 cursor-pointer",
+    outlinePrimary: "bg-background text-primary border-2 border-primary hover:bg-gray-200 cursor-pointer",
     disabled: "bg-gray-100 border-1 border-gray-400 text-gray-500 opacity-70 cursor-not-allowed"
   }
 
