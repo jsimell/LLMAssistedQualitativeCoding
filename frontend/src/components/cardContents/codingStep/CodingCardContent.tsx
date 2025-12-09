@@ -460,7 +460,7 @@ const CodingCardContent = () => {
           )}
           {passages.map((p) => renderPassage(p))}
         </div>
-        <div className="flex flex-col items-center gap-4 h-full w-fit min-w-50 max-w-sm">
+        <div className="flex flex-col items-center gap-4 h-full w-fit min-w-50 max-w-110">
           <CodingSettingsCard clickedSuggestionsToggleRef={clickedSuggestionsToggleRef} />
           <Codebook codeManager={codeManager} />
         </div>
