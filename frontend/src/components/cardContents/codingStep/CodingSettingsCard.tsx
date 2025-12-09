@@ -217,49 +217,49 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
         </div>
         {fewShotExamplesSelectionMode === "random" && (
           <div className="flex w-full gap-2 items-center justify-between">
-            <div className="flex gap-1 items-center">
-              <p className="pr-2">Number of few-shot examples:</p>
-            </div>
-            <input
-              type="number"
-              value={randomFewShotExamplesCount ?? ""}
-              onChange={(e) =>
-                setRandomFewShotExamplesCount(
-                  e.target.value === "" ? 0 : Number(e.target.value)
-                )
-              }
-              onBlur={(e) => {
-                if (e.target.value === "" || e.target.value === null) {
-                  setRandomFewShotExamplesCount(0); // Set to minimum value if input is empty
+            <p className="pr-2">Number of few-shot examples:</p>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={randomFewShotExamplesCount ?? ""}
+                onChange={(e) =>
+                  setRandomFewShotExamplesCount(
+                    e.target.value === "" ? 0 : Number(e.target.value)
+                  )
                 }
-              }}
-              onKeyDown={(e) => {
-                e.key === "Enter" && (e.target as HTMLInputElement).blur();
-              }}
-              className="border-1 border-outline rounded-md p-1 max-w-[80px]"
-            />
-
-            <div className="relative">
-              <QuestionMarkCircleIcon
-                className="size-4.5 text-tertiary"
-                onMouseEnter={() => setShowFewShotHoverMsg(true)}
-                onMouseLeave={() => setShowFewShotHoverMsg(false)}
+                onBlur={(e) => {
+                  if (e.target.value === "" || e.target.value === null) {
+                    setRandomFewShotExamplesCount(0); // Set to minimum value if input is empty
+                  }
+                }}
+                onKeyDown={(e) => {
+                  e.key === "Enter" && (e.target as HTMLInputElement).blur();
+                }}
+                className="border-1 border-outline rounded-md p-1 max-w-[80px]"
               />
-              {showFewShotHoverMsg && (
-                <HoverMessage className="w-[400px] absolute right-full top-1/2 -translate-y-[10%] mr-1">
-                  <div className="flex flex-col gap-4">
-                    <p>
-                      The system will randomly select the specified number of few-shot
-                      examples, if there are that many available. If there are fewer
-                      available examples than the specified number, all coded passages
-                      will be used as examples.
-                    </p>
-                    <p>
-                      New random examples will be selected for each suggestion request.
-                    </p>
-                  </div>
-                </HoverMessage>
-              )}
+
+              <div className="relative">
+                <QuestionMarkCircleIcon
+                  className="size-4.5 text-tertiary"
+                  onMouseEnter={() => setShowFewShotHoverMsg(true)}
+                  onMouseLeave={() => setShowFewShotHoverMsg(false)}
+                />
+                {showFewShotHoverMsg && (
+                  <HoverMessage className="w-[400px] absolute right-full top-1/2 -translate-y-[10%] mr-1">
+                    <div className="flex flex-col gap-4">
+                      <p>
+                        The system will randomly select the specified number of few-shot
+                        examples, if there are that many available. If there are fewer
+                        available examples than the specified number, all coded passages
+                        will be used as examples.
+                      </p>
+                      <p>
+                        New random examples will be selected for each suggestion request.
+                      </p>
+                    </div>
+                  </HoverMessage>
+                )}
+              </div>
             </div>
           </div>
         )}
