@@ -134,7 +134,7 @@ const CodeBookRow = ({ code, codeManager, count, setShowCodeSummaryFor }: CodeBo
       {showEditInteraction ? (
         renderEditInteraction()
       ) : (
-        <div className="flex justify-between items-center w-full">
+        <div className="flex justify-between items-center w-full gap-4">
           <div className="flex items-center gap-2">
             <span>{`(${
               codes.filter((c) => (c.code ?? "").trim() === code.trim()).length
