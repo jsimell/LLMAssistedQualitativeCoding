@@ -65,116 +65,116 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
             }}
           />
         </div>
-        <div className="flex gap-2 items-center justify-between">
-          <div className="flex gap-1 items-center">
-            <p>Context window for code suggestions (characters):</p>
-          </div>
-          <input
-            type="number"
-            value={codeSuggestionContextWindowSize ?? ""}
-            onChange={(e) =>
-              setCodeSuggestionContextWindowSize(
-                e.target.value === "" ? null : Number(e.target.value)
-              )
-            }
-            onBlur={(e) => {
-              if (e.target.value === "" || e.target.value === null) {
-                setCodeSuggestionContextWindowSize(0); // Set to minimum value if input is empty
+        <div className="flex gap-4 items-center justify-between">
+          <p>Context window for code suggestions (characters):</p>
+          <div className="flex gap-2 items-center">
+            <input
+              type="number"
+              value={codeSuggestionContextWindowSize ?? ""}
+              onChange={(e) =>
+                setCodeSuggestionContextWindowSize(
+                  e.target.value === "" ? null : Number(e.target.value)
+                )
               }
-            }}
-            onKeyDown={(e) => {
-              e.key === "Enter" && (e.target as HTMLInputElement).blur();
-            }}
-            className="border-1 border-outline rounded-md p-1 max-w-[80px] accent-[#006851]"
-          />
-          <div className="relative">
-            <QuestionMarkCircleIcon
-              className="size-4.5 text-tertiary"
-              onMouseEnter={() => setShowCodeSuggHoverMsg(true)}
-              onMouseLeave={() => setShowCodeSuggHoverMsg(false)}
+              onBlur={(e) => {
+                if (e.target.value === "" || e.target.value === null) {
+                  setCodeSuggestionContextWindowSize(0); // Set to minimum value if input is empty
+                }
+              }}
+              onKeyDown={(e) => {
+                e.key === "Enter" && (e.target as HTMLInputElement).blur();
+              }}
+              className="border-1 border-outline rounded-md p-1 max-w-[80px] accent-[#006851]"
             />
-            {showCodeSuggHoverMsg && (
-              <HoverMessage className="w-[400px] absolute right-full top-1/2 -translate-y-[10%] mr-1">
-                <div className="flex flex-col gap-4">
-                  <p>
-                    The number of characters that the prompt will include as surrounding
-                    context when generating code suggestions for a highlighted passage.
-                    70% of the window goes before the passage, 30% after. A value of 0
-                    means the highlighted passage is included alone with no surrounding
-                    context.
-                  </p>
-                  <p>
-                    After the specified number of characters are reached, the window is
-                    cut intelligently (e.g., at a line break, or sentence end).
-                  </p>
-                  <p>
-                    Larger windows may improve suggestion relevance but increase response
-                    time and cost.
-                  </p>
-                </div>
-              </HoverMessage>
-            )}
+            <div className="relative">
+              <QuestionMarkCircleIcon
+                className="size-4.5 text-tertiary"
+                onMouseEnter={() => setShowCodeSuggHoverMsg(true)}
+                onMouseLeave={() => setShowCodeSuggHoverMsg(false)}
+              />
+              {showCodeSuggHoverMsg && (
+                <HoverMessage className="w-[400px] absolute right-full top-1/2 -translate-y-[10%] mr-1">
+                  <div className="flex flex-col gap-4">
+                    <p>
+                      The number of characters that the prompt will include as surrounding
+                      context when generating code suggestions for a highlighted passage.
+                      70% of the window goes before the passage, 30% after. A value of 0
+                      means the highlighted passage is included alone with no surrounding
+                      context.
+                    </p>
+                    <p>
+                      After the specified number of characters are reached, the window is
+                      cut intelligently (e.g., at a line break, or sentence end).
+                    </p>
+                    <p>
+                      Larger windows may improve suggestion relevance but increase
+                      response time and cost.
+                    </p>
+                  </div>
+                </HoverMessage>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex gap-2 items-center justify-between">
-          <div className="flex gap-1 items-center">
-            <p>Context window for highlight suggestions (characters):</p>
-          </div>
-          <input
-            type="number"
-            value={highlightSuggestionContextWindowSize ?? ""}
-            onChange={(e) =>
-              setHighlightSuggestionContextWindowSize(
-                e.target.value === "" ? null : Number(e.target.value)
-              )
-            }
-            onBlur={(e) => {
-              if (e.target.value === "" || e.target.value === null) {
-                setHighlightSuggestionContextWindowSize(0); // Set to minimum value if input is empty
+        <div className="flex gap-4 items-center justify-between">
+          <p>Context window for highlight suggestions (characters):</p>
+          <div className="flex gap-2 items-center">
+            <input
+              type="number"
+              value={highlightSuggestionContextWindowSize ?? ""}
+              onChange={(e) =>
+                setHighlightSuggestionContextWindowSize(
+                  e.target.value === "" ? null : Number(e.target.value)
+                )
               }
-            }}
-            onKeyDown={(e) => {
-              e.key === "Enter" && (e.target as HTMLInputElement).blur();
-            }}
-            className="border-1 border-outline rounded-md p-1 max-w-[80px] accent-[#006851]"
-          />
-          <div className="relative">
-            <QuestionMarkCircleIcon
-              className="size-4.5 text-tertiary"
-              onMouseEnter={() => setShowHighlightSuggHoverMsg(true)}
-              onMouseLeave={() => setShowHighlightSuggHoverMsg(false)}
+              onBlur={(e) => {
+                if (e.target.value === "" || e.target.value === null) {
+                  setHighlightSuggestionContextWindowSize(0); // Set to minimum value if input is empty
+                }
+              }}
+              onKeyDown={(e) => {
+                e.key === "Enter" && (e.target as HTMLInputElement).blur();
+              }}
+              className="border-1 border-outline rounded-md p-1 max-w-[80px] accent-[#006851]"
             />
-            {showHighlightSuggHoverMsg && (
-              <HoverMessage className="w-[400px] absolute right-full top-1/2 -translate-y-[10%] mr-1">
-                <div className="flex flex-col gap-4">
-                  <p>
-                    The size of the window from which the LLM will suggest the next text
-                    passage to highlight. The size of the window should be large enough to
-                    always include a passage that needs to be coded.
-                  </p>
-                  <p>
-                    The starting point of the context window is determined based on the
-                    latest entered code or a click on an uncoded section in the data, in
-                    which case the AI searches for a suggestion starting from the
-                    beginning of that uncoded section.
-                  </p>
-                  <p>
-                    20% of the context window will be included as preceding context for
-                    the LLM, and 80% of the context window will serve as the actual search
-                    area from which the LLM will search for the next suggestion. The
-                    context window is cut intelligently (e.g., at a line break, or
-                    sentence end).
-                  </p>
-                </div>
-              </HoverMessage>
-            )}
+            <div className="relative">
+              <QuestionMarkCircleIcon
+                className="size-4.5 text-tertiary"
+                onMouseEnter={() => setShowHighlightSuggHoverMsg(true)}
+                onMouseLeave={() => setShowHighlightSuggHoverMsg(false)}
+              />
+              {showHighlightSuggHoverMsg && (
+                <HoverMessage className="w-[400px] absolute right-full top-1/2 -translate-y-[10%] mr-1">
+                  <div className="flex flex-col gap-4">
+                    <p>
+                      The size of the window from which the LLM will suggest the next text
+                      passage to highlight. The size of the window should be large enough
+                      to always include a passage that needs to be coded.
+                    </p>
+                    <p>
+                      The starting point of the context window is determined based on the
+                      latest entered code or a click on an uncoded section in the data, in
+                      which case the AI searches for a suggestion starting from the
+                      beginning of that uncoded section.
+                    </p>
+                    <p>
+                      20% of the context window will be included as preceding context for
+                      the LLM, and 80% of the context window will serve as the actual
+                      search area from which the LLM will search for the next suggestion.
+                      The context window is cut intelligently (e.g., at a line break, or
+                      sentence end).
+                    </p>
+                  </div>
+                </HoverMessage>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex flex-col w-full">
-          <label htmlFor="codingGuidelines">Coding guidelines for the LLM:</label>
+          <label htmlFor="codingGuidelines">Coding guidelines for the AI:</label>
           <ul className="list-disc ml-3 pb-2 pt-0.5 text-sm">
             <li>
-              The guidelines you type below are automatically included in the LLM prompts.
+              The guidelines you type below are automatically included in the AI prompts.
             </li>
           </ul>
           <textarea
