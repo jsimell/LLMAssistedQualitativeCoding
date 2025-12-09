@@ -6,14 +6,11 @@ import {
   WorkflowContext,
 } from "../../../../../context/WorkflowContext";
 import { callOpenAIStateless } from "../../../../../services/openai";
-import {
-  getContextForHighlightSuggestions,
-  constructFewShotExamplesString,
-} from "../../utils/passageUtils";
+import { getContextForHighlightSuggestions } from "../../utils/passageUtils";
 import { usePrompts } from "./usePrompts";
 
 const MAX_RETRY_ATTEMPTS = 2;
-const OPENAI_MODEL = "gpt-4.1"; // Define the model to use
+const OPENAI_MODEL = "gpt-5.1"; // Define the model to use
 
 export const useHighlightSuggestions = () => {
   // Get global states from the context
