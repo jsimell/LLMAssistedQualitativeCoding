@@ -7,14 +7,13 @@ let currentConversation: OpenAI.Conversations.Conversation | null = null;
 let currentAPIKey: string | null = null;
 const apiCallQueue = new APICallQueue();
   const acceptedModels = [
+    "gpt-5.1",
     "gpt-5",
     "gpt-5-mini",
     "gpt-5-nano",
     "gpt-4.1",
     "gpt-4.1-mini",
     "gpt-4.1-nano",
-    "gpt-4o",
-    "gpt-4o-mini",
   ];
 
 // Used to prevent multiple simultaneous OpenAI conversation initializations
