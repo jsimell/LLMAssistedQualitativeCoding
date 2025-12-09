@@ -51,7 +51,7 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
       <div className="flex h-fit w-full items-center justify-center px-4.5 pt-2.5 pb-2 border-b border-outline rounded-t-lg bg-container text-primary">
         <p className="text-lg font-semibold">Coding Settings</p>
       </div>
-      <div className="flex flex-col w-full px-6 items-center pt-6 pb-5 gap-5">
+      <div className="flex flex-col w-full px-6 items-center py-7 gap-5">
         <div className="flex gap-2 w-full items-center justify-between">
           <p>AI suggestions</p>
           <ToggleSwitch
@@ -264,7 +264,7 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
           </div>
         )}
         {fewShotExamplesSelectionMode === "manual" && (
-          <div className="flex flex-col w-full items-center gap-3 pb-2">
+          <div className="flex flex-col w-full items-center gap-3">
             <SmallButton
               label={`${fewShotExamples.length === 0 ? "Select" : "Change"} examples`}
               onClick={() => setShowExamplesSelectionWindow(true)}
