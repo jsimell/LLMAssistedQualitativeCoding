@@ -74,13 +74,16 @@ const PromptReviewCardContent = () => {
         <h2 className="pt-5 font-semibold text-xl">Utilized OpenAI Models</h2>
         <ul className="max-w-[75%] list-disc ml-4 marker:font-bold flex flex-col gap-3">
           <li>
-            Code suggestions and autocomplete suggestions use the <b>GPT-4.1 Mini</b> model to
-            balance performance and cost.
+            Code suggestions and autocomplete suggestions use the <b>GPT-4.1 Mini</b>{" "}
+            model to balance performance and cost.
           </li>
           <li>
-            Highlight suggestions use the <b>GPT-5.1</b> model, because smaller models (mini and
-            nano models) tend to struggle to consistently find the first relevant passage
-            in the search area, and GPT-5 models tend to respond too slowly for this task.
+            Highlight suggestions use the <b>GPT-5.1</b> model, because smaller models
+            (mini and nano models) tend to struggle with consistently finding the first
+            relevant passage in the search area, and GPT-5 models tend to respond too
+            slowly for this task. GPT-5.1 was chosen over GPT-4.1 due to lower input token
+            costs, which is important in this use case where examples and context can
+            increase prompt length significantly.
           </li>
         </ul>
       </div>
