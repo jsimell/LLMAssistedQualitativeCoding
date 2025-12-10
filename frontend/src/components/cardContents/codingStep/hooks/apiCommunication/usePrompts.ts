@@ -322,11 +322,12 @@ ${
 
 ## TASK
 1. Think of 3-6 core codes, each conceptually distinct from existing codes.
+  - Do NOT output any existing code, or any code that is just a paraphrase or trivial rewording of them.
 2. For each core code, provide 3-6 alternative phrasings.
   - This adds up to total suggestions being 9-36 codes.
-  - Ensure all codes are relevant to the research questions and context.
-  - Do NOT include any codes from the codebook or the passage's existing codes.
   - Use the user's coding style for wording and format.
+  - Aim for breadth and variety in your suggestions, maximizing autocomplete matches.
+  - Ensure all suggested codes are relevant to the research questions and context.
 ${
   codingGuidelines?.trim()
     .length > 0
