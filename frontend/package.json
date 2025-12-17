@@ -1,9 +1,9 @@
 {
-  "name": "llm-assisted-inductive-coding",
+  "name": "llm-assisted-qualitative-coding",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://jsimell.github.io/LLMAssistedInductiveCoding",
+  "homepage": "https://jsimell.github.io/LLMAssistedQualitativeCoding",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
