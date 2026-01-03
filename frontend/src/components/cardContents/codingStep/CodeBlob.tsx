@@ -51,7 +51,7 @@ const CodeBlob = ({
 
   // CONTEXT
   const context = useContext(WorkflowContext)!; // Non-null assertion since parent already ensures WorkflowContext is provided
-  const { codes, passages, setPassages, aiSuggestionsEnabled } = context;
+  const { codes, codebook, passages, setPassages, aiSuggestionsEnabled } = context;
 
   // STATE
   const [ghostText, setGhostText] = useState<string>("Type code...");
@@ -109,8 +109,8 @@ const CodeBlob = ({
 
   // Update ghost text based on input value and suggestions
   useEffect(() => {
-    if (!aiSuggestionsEnabled) {
-      inputValue.length === 0 ? setGhostText("Type code...") : setGhostText("");
+    if (!aiSuggestionsEnabled && inputValue.length === 0) {
+      setGhostText("Type code...");
       return;
     }
 
@@ -130,7 +130,7 @@ const CodeBlob = ({
         const isNotAnExistingCode = !existingCodesSet.has(suggestionLower);
         return isNotInputted && isNotAnExistingCode;
       });
-      if (suggestion) {
+      if (suggestion && aiSuggestionsEnabled) {
         setGhostText(suggestion);
       } else {
         inputValue === "" ? setGhostText("Type code...") : setGhostText("");
@@ -140,13 +140,22 @@ const CodeBlob = ({
       const codeAndAutocompleteSuggestions = Array.from(
         new Set([...codeSuggestions, ...autocompleteSuggestions])
       );
-      const matchingSuggestion = codeAndAutocompleteSuggestions.find(
+      let matchingSuggestion = codeAndAutocompleteSuggestions.find(
         (suggestion) =>
           suggestion
             .toLowerCase()
             .startsWith(afterLastSemicolon.toLowerCase()) &&
           !inputValue.toLowerCase().includes(suggestion.toLowerCase())
       );
+      // Try to match with existing codebook codes if no match found yet
+      if (!matchingSuggestion) {
+        matchingSuggestion = Array.from(codebook).find(
+          (code) =>
+            code
+              .startsWith(afterLastSemicolon) &&
+            !inputValue.toLowerCase().includes(code.toLowerCase())
+        );
+      }
       const inputLastCharIsSpace = inputValue.slice(-1) === " ";
       setGhostText(
         inputLastCharIsSpace 

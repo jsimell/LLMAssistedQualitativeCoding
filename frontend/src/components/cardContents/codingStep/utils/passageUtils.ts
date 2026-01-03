@@ -159,8 +159,6 @@ export const getTrailingContextFromCsvRow = (
   return followingText.slice(0, firstIndexOfEOR); // up to (not including) the "\u001E"
 };
 
-
-
 // PUBLIC API
 
 /**
@@ -199,20 +197,12 @@ export const getPassageWithSurroundingContext = (
       .filter((p) => p.order < passageOrder)
       .map((p) => p.text)
       .join("");
-    precedingContext = getPrecedingContext(
-      precedingText,
-      minPrecedingContext,
-      100
-    );
+    precedingContext = getPrecedingContext(precedingText, minPrecedingContext, 300);
     const trailingText = passages
       .filter((p) => p.order > passageOrder)
       .map((p) => p.text)
       .join("");
-    trailingContext = getTrailingContext(
-      trailingText,
-      minTrailingContext,
-      100
-    );
+    trailingContext = getTrailingContext(trailingText, minTrailingContext, 300);
   }
 
   if (markPassageInResult) {
@@ -265,8 +255,7 @@ export const getContextForHighlightSuggestions = (
       : followingPassages.slice(0, firstHighlightedIdx);
 
   let searchArea =
-    startPassage.text.slice(searchStartIndex) +
-    tailPassages.map((p) => p.text).join("");
+    startPassage.text.slice(searchStartIndex) + tailPassages.map((p) => p.text).join("");
 
   // If passages are from CSV, limit preceding text to same row only, and return
   if (dataIsCSV) {
@@ -276,7 +265,11 @@ export const getContextForHighlightSuggestions = (
     const searchAreaSize = minContextWindowSize - precedingText.length;
     return {
       precedingText: precedingText,
-      searchArea: getTrailingContext(searchArea, searchAreaSize > 0 ? searchAreaSize : 300, 200),  // In the rare case precedingText is already larger than minContextWindowSize, just cut searchArea to 300 chars
+      searchArea: getTrailingContext(
+        searchArea,
+        searchAreaSize > 0 ? searchAreaSize : 300,
+        200
+      ), // In the rare case precedingText is already larger than minContextWindowSize, just cut searchArea to 300 chars
     };
   }
 
@@ -298,60 +291,4 @@ export const getContextForHighlightSuggestions = (
   searchArea = getTrailingContext(searchArea, searchAreaSize, 200);
 
   return { precedingText, searchArea };
-};
-
-/** Constructs few-shot examples string for the system prompt based on existing coded passages.
- * @param passage The passage for which to construct few-shot examples (to exclude from examples)
- * @param passages All passages in the document
- * @param codes All codes in the document
- * @param dataIsCSV Whether the data is from a CSV file
- * @returns The few-shot examples, or null if no coded passages exist.
- */
-export const constructFewShotExamplesString = (
-  passage: Passage,
-  passages: Passage[],
-  codes: Code[],
-  dataIsCSV: boolean
-) => {
-  const codedPassages = passages.filter(
-    (p) => p.id !== passage.id && p.codeIds.length > 0
-  );
-  if (codedPassages.length === 0) {
-    return null;
-  }
-
-  // Randomly choose up to 10 coded examples for few-shot examples
-  const fewShotExamples = codedPassages
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 10)
-    .map((p) => {
-      const codes_: string[] = p.codeIds
-        .map((id) => codes.find((c) => c.id === id)?.code)
-        .filter(Boolean) as string[];
-
-      const surroundingContext = getPassageWithSurroundingContext(
-        p,
-        passages,
-        80,
-        20,
-        false,
-        dataIsCSV
-      );
-      const hasSurroundingContext = surroundingContext.trim() !== p.text.trim();
-
-      return JSON.stringify(
-        {
-          passage: p.text, 
-          surroundingContext: hasSurroundingContext
-            ? surroundingContext
-            : "None",
-          codes: codes_,
-        },
-        null,
-        2
-      );
-    })
-    .join(",\n");
-
-  return fewShotExamples;
 };

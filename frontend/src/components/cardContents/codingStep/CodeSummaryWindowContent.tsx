@@ -56,6 +56,17 @@ const CodeSummaryWindowContent = ({
                       passageStartIdx + passage.text.length
                     )}
                   </span>
+                  {passage.codeIds.map((codeId) => {
+                    const code = codes.find((c) => c.id === codeId);
+                    return code ? (
+                      <span
+                        key={code.id}
+                        className="inline-flex items-center self-center w-fit pl-2 pr-1.5 mr-1 my-0.5 bg-tertiaryContainer border-1 border-gray-400 rounded-full"
+                      >
+                        {code.code}
+                      </span>
+                    ) : null;
+                  })}
                   <span>{context.slice(passageStartIdx + passage.text.length)}</span>
                 </div>
                 <span className="block my-5 w-full border-t border-outline"></span>

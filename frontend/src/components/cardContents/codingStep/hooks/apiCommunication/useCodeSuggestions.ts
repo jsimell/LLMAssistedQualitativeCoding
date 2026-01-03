@@ -6,7 +6,6 @@ import {
 import { callOpenAIStateless } from "../../../../../services/openai";
 import {
   getPassageWithSurroundingContext,
-  constructFewShotExamplesString,
 } from "../../utils/passageUtils";
 import { usePrompts } from "./usePrompts";
 

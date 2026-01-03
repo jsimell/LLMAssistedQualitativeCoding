@@ -35,6 +35,7 @@ const Codebook = ({ codeManager }: CodebookProps) => {
   const codebookArray = useMemo(() => {
     return Array.from(codebook)
       .filter((code) => code ? code.trim().length > 0 : false)
+      .sort((a, b) => a.localeCompare(b)) // First sort alphabetically, then by count
       .sort((a, b) => getCodeCount(b) - getCodeCount(a));
   }, [codebook, codes]); // Only re-sort when codebook or codes change
 
@@ -154,7 +155,7 @@ const Codebook = ({ codeManager }: CodebookProps) => {
           />
         </div>
       </div>
-      <div className="flex flex-col w-full gap-1.5 p-6 items-center overflow-y-auto">
+      <div className="flex flex-col w-full gap-2 p-6 items-center overflow-y-auto">
         {codebookArray.length + importedCodesArray.length === 0 && 
           <div className="flex flex-col items-center gap-3 pb-1.5">
             <p className="max-w-[60%] text-center">Add codes by highlighting passages in the data.</p>

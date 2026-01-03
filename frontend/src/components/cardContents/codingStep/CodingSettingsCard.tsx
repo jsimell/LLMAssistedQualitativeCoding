@@ -298,7 +298,7 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
                 passage,
                 passages,
                 50,
-                20,
+                50,
                 false,
                 dataIsCSV
               );
@@ -330,7 +330,7 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
                                   passage,
                                   passages,
                                   50,
-                                  20,
+                                  50,
                                   true,
                                   dataIsCSV
                                 ),
@@ -349,7 +349,7 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
                     />
                     <div
                       key={passage.id}
-                      className={`pr-6 ${
+                      className={`pr-6 whitespace-pre-wrap ${
                         isInExamples
                           ? "border-l-7 pl-2 rounded-l-sm border-[#006851]"
                           : ""

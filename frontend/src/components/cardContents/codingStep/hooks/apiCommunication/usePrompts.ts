@@ -38,9 +38,9 @@ export const usePrompts = () => {
       ...Array.from(importedCodes)
     ]));
     return codebookAndImported.length > 0
-      ? `${codebookAndImported
+      ? `\n${codebookAndImported
           .map((code) => `"${code}"`)
-          .join(", ")}`
+          .join(", \n")}\n`
       : "No codes in the codebook yet"
   };
 
@@ -62,11 +62,10 @@ export const usePrompts = () => {
         .map(
           (example) =>
             `{
-  codedPassage: "${escapeForPrompt(example.codedPassage)}",
+  passageWithContext: "${escapeForPrompt(example.context)}",
   codes: [${example.codes
     .map((code) => `"${escapeForPrompt(code)}"`)
     .join(", ")}],
-  context: "${escapeForPrompt(example.context)}",
 }`
         )
         .join(",\n");
@@ -87,7 +86,7 @@ export const usePrompts = () => {
             p,
             passages,
             50,
-            20,
+            50,
             true,
             dataIsCSV
           );
@@ -106,11 +105,10 @@ export const usePrompts = () => {
         .map(
           (example) =>
             `{
-  codedPassage: "${escapeForPrompt(example.codedPassage)}",
+  passageWithContext: "${escapeForPrompt(example.context)}",
   codes: [${example.codes
     .map((code) => `"${escapeForPrompt(code)}"`)
     .join(", ")}],
-  context: "${escapeForPrompt(example.context)}",
 }`
         )
         .join(",\n");
@@ -147,27 +145,32 @@ ${
 }
 
 ## TASK
-1. Review the codebook and examples to understand the user's coding style.
-2. Find the FIRST subpassage in the SEARCH AREA that provides meaningful insight related to the research context.
-  - Selection style (length, cropping, detail) should mimic the examples.
+1. Review the codebook and coding style examples to understand the user's coding style.
+2. Find the FIRST subpassage in the SEARCH AREA that helps answer at least one research question 
+(e.g. by describing a reason, experience, mechanism, consequence, or decision related to the topic).
+  - The selected subpassage must match the user's established passage selection style illustrated by the examples.
+  - Mimic the user's typical passage cutting style and length (full sentences/paragraphs vs. fragments, complete thoughts vs. partial ideas).
+  - Include possible metadata (speaker identifiers, timestamps, usernames, etc.) only if the user usually includes them.
+  - If the user's style is unclear, default to the most conservative option (full sentences, minimal length while still capturing meaning, no metadata).
 3. Coding:
-  - If you find a relevant passage, assign **1-5 codes** to it.
-  - If you cannot assign at least one code, **do not suggest that passage**.
-  - Reuse codebook codes if they fit the passage.
-  - Create new codes if all the aspects of the passage can not be covered with codebook codes, ensuring the new codes match the user's coding style.
-  - List codes strictly in order of relevance. The origin of the code (codebook vs. newly created) should not affect the order.
-  - Cover all important aspects, but avoid overcoding.
-4. If there is **no codeable passage** in the SEARCH AREA, return an empty passage and empty codes.
+  - Once you find a relevant passage, your task is to assign **1-5 codes** to it.
+  - These codes should capture all important aspects of the passage in relation to the research questions.
+  - Prioritize code accuracy over reusing codebook codes. Create new codes if needed, ensuring they match the user's coding style.
+  - List codes strictly in order of relevance, with the first listed code being the most relevant. The origin of the code (codebook vs. newly created) should not affect the order.
+  - Avoid overcoding, but ensure all important aspects are covered.
+4. If there is no codeable passage in the SEARCH AREA, return an empty passage and empty codes.
 ${
   codingGuidelines?.trim()
     .length > 0
-    ? `\n## USER PROVIDED CODING GUIDELINES\n${codingGuidelines}\n`
+    ? `\n## USER PROVIDED CODING GUIDELINES (**high priority**, but should not affect output format)\n${codingGuidelines}\n`
     : ""
 }
 ## USER'S CODING STYLE
-Codebook: [${constructCodebookString()}]
 Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
 [${constructFewShotExamplesString(dataIsCSV)}]
+
+## CURRENT CODEBOOK
+[${constructCodebookString()}]
 
 ## RESPONSE FORMAT
 Respond ONLY with a valid JavaScript object:
@@ -219,7 +222,7 @@ ${
 }
 
 ## TASK
-1. Review the codebook and examples to understand the user's coding style.
+1. Review the codebook and coding style examples to understand the user's coding style.
 2. Find the FIRST subpassage in the SEARCH AREA that provides meaningful insight related to the research context.
   - Selection style (length, cropping, detail) should mimic the examples.
   - The search area may start mid-row; if so, ensure your selected passage does not include any text before the start of the search area.
@@ -239,9 +242,11 @@ ${
     : ""
 }
 ## USER'S CODING STYLE
-Codebook: [${constructCodebookString()}]
 Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
 [${constructFewShotExamplesString(dataIsCSV)}]
+
+## CURRENT CODEBOOK
+[${constructCodebookString()}]
 
 ## RESPONSE FORMAT
 Respond ONLY with a valid JavaScript object:
@@ -335,9 +340,11 @@ ${
     : ""
 }
 ## USER'S CODING STYLE
-Codebook: [${constructCodebookString()}]
 Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
 [${constructFewShotExamplesString(dataIsCSV)}]
+
+## CURRENT CODEBOOK
+[${constructCodebookString()}]
 
 ## TARGET PASSAGE
 Passage to code: "${
@@ -430,9 +437,11 @@ ${
     : ""
 }
 ## USER'S CODING STYLE
-Codebook: [${constructCodebookString()}]
 Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
 [${constructFewShotExamplesString(dataIsCSV)}]
+
+## CURRENT CODEBOOK
+[${constructCodebookString()}]
 
 ## TARGET PASSAGE
 Passage to code: "${

@@ -16,7 +16,7 @@ const WorkspaceCardHeader = ({
   onButtonClick,
 }: WorkspaceCardHeaderProps) => {
   return (
-    <div className="flex h-fit w-full items-center justify-between gap-8 px-6 py-5 border-b border-outline rounded-t-xl bg-container text-primary">
+    <div className="flex h-fit w-full items-center justify gap-8 px-6 py-5 border-b border-outline rounded-t-xl bg-container text-primary">
       <div className="text-3xl font-semibold">{title}</div>
       {buttonLabel && (
         <SmallButton
@@ -24,7 +24,7 @@ const WorkspaceCardHeader = ({
           icon={buttonIcon}
           iconPosition={buttonIconPosition}
           onClick={onButtonClick ?? (() => {})}
-          variant="primary"
+          variant="tertiary"
         />
       )}
     </div>

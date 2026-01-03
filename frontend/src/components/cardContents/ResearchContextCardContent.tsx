@@ -58,7 +58,7 @@ const ResearchContextCardContent = () => {
           can include multiple questions in the same field.
         </li>
         <li>
-          Optionally, you can also provide additional <b>contextual information</b> about your research (e.g. data origin, type of data, interviewee demographics etc.) to improve the LLMs understanding of your research context.
+          Optionally, you can also provide additional <b>contextual information</b> about your <b>data</b> (e.g. data origin, type of data, interviewee demographics etc.) to improve the LLMs understanding of your research context.
         </li>
         <li>
           The submitted information will be included in the coding suggestion prompts.

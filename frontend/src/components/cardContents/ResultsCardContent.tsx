@@ -51,11 +51,11 @@ const ResultsCardContent = () => {
         const codesString = uniqueCodes.join("; ");
 
         // Use this column's passages to compute context
-        const contextText = getPassageWithSurroundingContext(
+        let contextText = getPassageWithSurroundingContext(
           p,
-          columnPassages,
+          passages,
           200,
-          200,
+          100,
           false,
           uploadedFile?.type === "text/csv"
         ).replace("\u001E", ""); // Remove the record separator characters that were used as row ending tokens
