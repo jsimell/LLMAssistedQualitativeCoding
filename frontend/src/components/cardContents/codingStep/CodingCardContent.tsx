@@ -7,7 +7,8 @@ import SuggestionBlob from "./SuggestionBlob";
 import { useSuggestionsManager } from "./hooks/useSuggestionsManager";
 import InfoBox from "../../InfoBox";
 import { useCodeManager } from "./hooks/useCodeManager";
-import CodingSettingsCard from "./CodingSettingsCard";
+import CodingSidePanel from "./CodingSidePanel";
+import CodingSettingsCardContent from "./CodingSettingsCard";
 
 const CodingCardContent = () => {
   // Get global states and setters from the context
@@ -60,11 +61,12 @@ const CodingCardContent = () => {
   const [displayedColumn, setDisplayedColumn] = useState<string>(columnNames[0] || "");
 
   // Refs
-  const clickedSuggestionsToggleRef = useRef<boolean>(false); // Track if the most recent click was on the suggestions toggle
   const clickedExampleBlobRef = useRef<boolean>(false); // Track if the most recent click was on a few-shot example blob
   const isProcessingPendingRef = useRef<boolean>(false); // Used for preventing overlapping processing of the same queue head
   // Keep a stable ref to the latest fetch function to avoid effect re-trigger on identity changes
   const inclusiveFetchRef = useRef(inclusivelyFetchHighlightSuggestionAfter);
+  // Track if the most recent click was on an element that should prevent code blob deactivation when clicked
+  const preventCodeBlobDeactivationRef = useRef<boolean>(false);
 
   /**
    * Proceed should be available by default.
@@ -316,10 +318,10 @@ const CodingCardContent = () => {
             </span>
             <SuggestionBlob
               passage={p}
-              onClick={(e) => {
-                e.stopPropagation();
+              onAccept={() => {
                 handleAcceptSuggestion(p.id);
               }}
+              onDecline={() => setShowHighlightSuggestionFor(null)}
             />
             <span id="after-suggestion">{p.text.slice(endIdx)}</span>
           </>
@@ -402,7 +404,7 @@ const CodingCardContent = () => {
                   activeCodeId={activeCodeId}
                   setActiveCodeId={setActiveCodeId}
                   setPendingHighlightFetches={setPendingHighlightFetches}
-                  clickedSuggestionsToggleRef={clickedSuggestionsToggleRef}
+                  preventCodeBlobDeactivationRef={preventCodeBlobDeactivationRef}
                   clickedExampleBlobRef={clickedExampleBlobRef}
                   isLastCodeOfPassage={index === p.codeIds.length - 1}
                   codeManager={codeManager}
@@ -458,10 +460,14 @@ const CodingCardContent = () => {
           {passages.map((p) => renderPassage(p))}
         </div>
         <div className="flex flex-col items-center gap-4 h-full w-fit min-w-50 max-w-110">
-          <CodingSettingsCard clickedSuggestionsToggleRef={clickedSuggestionsToggleRef} />
-          <Codebook codeManager={codeManager} />
+          <CodingSidePanel preventCodeBlobDeactivationRef={preventCodeBlobDeactivationRef}>
+            <CodingSettingsCardContent
+              preventCodeBlobDeactivationRef={preventCodeBlobDeactivationRef}
+            />
+            <Codebook codeManager={codeManager} />
+          </CodingSidePanel>
         </div>
-        {isFetchingHighlightSuggestion && !activeCodeId && (
+        {isFetchingHighlightSuggestion && !activeCodeId && aiSuggestionsEnabled && (
           <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
             <InfoBox msg="Fetching highlight suggestion..." variant="loading"></InfoBox>
           </div>

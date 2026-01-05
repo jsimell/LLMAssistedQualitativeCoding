@@ -46,8 +46,9 @@ export interface HighlightSuggestion {
 
 export interface FewShotExample {
   passageId: PassageId;
-  context: string;
+  precedingText: string;
   codedPassage: string;
+  trailingText: string;
   codes: string[];
 }
 

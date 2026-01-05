@@ -5,9 +5,7 @@ import { ArrowDownTrayIcon, PlusIcon } from "@heroicons/react/24/outline";
 import SmallButton from "../../SmallButton";
 import { parse } from "papaparse";
 import OverlayWindow from "../../OverlayWindow";
-import { getPassageWithSurroundingContext } from "./utils/passageUtils";
 import CodeSummaryWindowContent from "./CodeSummaryWindowContent";
-import { DocumentArrowDownIcon } from "@heroicons/react/24/solid";
 
 interface CodebookProps {
   codeManager: {
@@ -144,18 +142,8 @@ const Codebook = ({ codeManager }: CodebookProps) => {
   };
 
   return (
-    <div className="flex flex-col sticky top-31 items-center w-full h-fit rounded-lg border-1 border-outline max-h-[84vh]">
-      <div className="flex h-fit w-full items-center px-3 pt-2.5 pb-2 border-b border-outline rounded-t-lg bg-container text-primary">
-        <div className="grow"></div>
-        <p className="text-lg font-semibold">Codebook</p>
-        <div className="grow flex justify-end items-center">
-          <ArrowDownTrayIcon
-            className="size-5.5 stroke-2 cursor-pointer text-[#08497a] hover:bg-primary/12 rounded-sm" 
-            onClick={handleCodebookDownload}
-          />
-        </div>
-      </div>
-      <div className="flex flex-col w-full gap-2 p-6 items-center overflow-y-auto">
+    <div>
+      <div className="flex flex-col w-full gap-2 p-6 items-center">
         {codebookArray.length + importedCodesArray.length === 0 && 
           <div className="flex flex-col items-center gap-3 pb-1.5">
             <p className="max-w-[60%] text-center">Add codes by highlighting passages in the data.</p>
@@ -176,6 +164,17 @@ const Codebook = ({ codeManager }: CodebookProps) => {
             />
           </div>
         }
+        {codebookArray.length > 0 && 
+          <div className="pb-4 pt-1.5">
+            <SmallButton
+              label="Download codebook"
+              icon={ArrowDownTrayIcon}
+              onClick={handleCodebookDownload}
+              variant={"primary"}
+            />
+          </div>
+        }
+        {codebookArray.length > 0 && <p className="self-start pb-1 font-semibold text-primary">Codes in use:</p>}
         {codebookArray.map((code, index) => {
           return (
             <div key={code} className="w-full">
@@ -184,7 +183,8 @@ const Codebook = ({ codeManager }: CodebookProps) => {
             </div>
           );
         })}
-        {importedCodesArray.length > 0 && <p className="self-start pb-1 font-medium">Unused/imported codes:</p>}
+        {importedCodesArray.length > 0 && codebookArray.length > 0 && <hr className="w-full border-t border-outline my-2" />}
+        {importedCodesArray.length > 0 && <p className="self-start pb-1 font-semibold text-primary">Unused/imported codes:</p>}
         {importedCodesArray.map((code) => (
           <CodeBookRow key={code} code={code} codeManager={codeManager} count={getCodeCount(code)} setShowCodeSummaryFor={setShowCodeSummaryFor} />
         ))}

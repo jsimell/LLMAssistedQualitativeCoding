@@ -16,7 +16,7 @@ interface CodeBlobProps {
   activeCodeId: CodeId | null;
   setActiveCodeId: React.Dispatch<React.SetStateAction<CodeId | null>>;
   setPendingHighlightFetches: React.Dispatch<React.SetStateAction<Array<PassageId>>>;
-  clickedSuggestionsToggleRef: React.RefObject<boolean>;
+  preventCodeBlobDeactivationRef: React.RefObject<boolean>;
   clickedExampleBlobRef: React.RefObject<boolean>;
   isLastCodeOfPassage: boolean;
   codeManager: {
@@ -38,7 +38,7 @@ const CodeBlob = ({
   activeCodeId,
   setActiveCodeId,
   setPendingHighlightFetches,
-  clickedSuggestionsToggleRef,
+  preventCodeBlobDeactivationRef,
   clickedExampleBlobRef,
   isLastCodeOfPassage,
   codeManager,
@@ -109,6 +109,7 @@ const CodeBlob = ({
 
   // Update ghost text based on input value and suggestions
   useEffect(() => {
+    // If AI suggestions are disabled and input is empty, show default ghost text
     if (!aiSuggestionsEnabled && inputValue.length === 0) {
       setGhostText("Type code...");
       return;
@@ -120,7 +121,7 @@ const CodeBlob = ({
 
     if (afterLastSemicolon === "") {
       // Nothing typed after last semicolon, or nothing typed at all
-      // Find the first suggestion that hasn't been typed yet
+      // Find the first suggestion that hasn't been typed yet and isn't already an existing code of the passage
       const inputValueLower = inputValue.toLowerCase();
       const existingCodesSet = new Set(codes.filter(c => c.passageId === parentPassage.id).map(c => c.code.toLowerCase()));
 
@@ -135,19 +136,9 @@ const CodeBlob = ({
       } else {
         inputValue === "" ? setGhostText("Type code...") : setGhostText("");
       }
-    } else {
-      // There is some text after the last semicolon, or the user has typed part of the first code
-      const codeAndAutocompleteSuggestions = Array.from(
-        new Set([...codeSuggestions, ...autocompleteSuggestions])
-      );
-      let matchingSuggestion = codeAndAutocompleteSuggestions.find(
-        (suggestion) =>
-          suggestion
-            .toLowerCase()
-            .startsWith(afterLastSemicolon.toLowerCase()) &&
-          !inputValue.toLowerCase().includes(suggestion.toLowerCase())
-      );
-      // Try to match with existing codebook codes if no match found yet
+    } else { // There is some text after the last semicolon, or the user has typed part of the first code
+      // First try to match with existing codebook codes
+      let matchingSuggestion = null;
       if (!matchingSuggestion) {
         matchingSuggestion = Array.from(codebook).find(
           (code) =>
@@ -156,6 +147,22 @@ const CodeBlob = ({
             !inputValue.toLowerCase().includes(code.toLowerCase())
         );
       }
+      // If aiSuggestions are enabled, replace matchingSuggestion with codeSuggestions/autocompleteSuggestions match (if any)
+      if (aiSuggestionsEnabled) {      
+        // Replace matchingSuggestion if a match is found in codeSuggestions or autocompleteSuggestions
+        const codeAndAutocompleteSuggestions = Array.from(
+          new Set([...codeSuggestions, ...autocompleteSuggestions])
+        );
+        matchingSuggestion = codeAndAutocompleteSuggestions.find(
+          (suggestion) =>
+            suggestion
+              .toLowerCase()
+              .startsWith(afterLastSemicolon.toLowerCase()) &&
+            !inputValue.toLowerCase().includes(suggestion.toLowerCase())
+        );
+      }
+
+      // Set ghost text based on the matching suggestion
       const inputLastCharIsSpace = inputValue.slice(-1) === " ";
       setGhostText(
         inputLastCharIsSpace 
@@ -216,7 +223,7 @@ const CodeBlob = ({
     // ENTER: finalize editing of the current code
     if (e.key === "Enter") {
       e.preventDefault();
-      clickedSuggestionsToggleRef.current = false;
+      preventCodeBlobDeactivationRef.current = false;
       inputRef.current?.blur(); // Blur to trigger handleCodeEnter
       return;
     }
@@ -282,13 +289,13 @@ const CodeBlob = ({
   /** Updates the code into the global state. */
   const handleCodeEnter = async () => {
     if (activeCodeId === null) return; // For safety: should not happen
-    if (clickedSuggestionsToggleRef.current || clickedExampleBlobRef.current) {
+    if (preventCodeBlobDeactivationRef.current || clickedExampleBlobRef.current) {
       // If code enter was caused by user clicking the suggestions toggle or a few-shot example checkbox, 
       // refocus the code blob instead of updating the code
       inputRef.current?.focus();
       return;
     }
-    clickedSuggestionsToggleRef.current = false;
+    preventCodeBlobDeactivationRef.current = false;
 
     const codeObject: Code | undefined = codes.find(
       (c) => c.id === activeCodeId

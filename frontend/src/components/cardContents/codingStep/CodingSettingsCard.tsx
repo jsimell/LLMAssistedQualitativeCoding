@@ -9,11 +9,11 @@ import OverlayWindow from "../../OverlayWindow";
 import XMarkIcon from "@heroicons/react/24/outline/XMarkIcon";
 import { getPassageWithSurroundingContext } from "./utils/passageUtils";
 
-interface CodingSettingsCardProps {
-  clickedSuggestionsToggleRef: React.RefObject<boolean>;
+interface CodingSettingsCardContentProps {
+  preventCodeBlobDeactivationRef: React.RefObject<boolean>;
 }
 
-const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardProps) => {
+const CodingSettingsCardContent = ({ preventCodeBlobDeactivationRef }: CodingSettingsCardContentProps) => {
   const [showCodeSuggHoverMsg, setShowCodeSuggHoverMsg] = useState(false);
   const [showHighlightSuggHoverMsg, setShowHighlightSuggHoverMsg] = useState(false);
   const [showFewShotHoverMsg, setShowFewShotHoverMsg] = useState(false);
@@ -47,10 +47,7 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
   const dataIsCSV = uploadedFile?.type === "text/csv";
 
   return (
-    <div className="w-full h-fit flex flex-col items-center justify-center rounded-lg border-1 border-outline">
-      <div className="flex h-fit w-full items-center justify-center px-4.5 pt-2.5 pb-2 border-b border-outline rounded-t-lg bg-container text-primary">
-        <p className="text-lg font-semibold">Coding Settings</p>
-      </div>
+    <div className="w-full h-fit flex flex-col items-center justify-center">
       <div className="flex flex-col w-full px-6 items-center py-7 gap-5">
         <div className="flex gap-2 w-full items-center justify-between">
           <p>AI suggestions</p>
@@ -58,15 +55,15 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
             booleanState={aiSuggestionsEnabled}
             setBooleanState={setAiSuggestionsEnabled}
             onMouseDown={() => {
-              clickedSuggestionsToggleRef.current = true;
+              preventCodeBlobDeactivationRef.current = true;
             }}
             onMouseLeave={() => {
-              clickedSuggestionsToggleRef.current = false;
+              preventCodeBlobDeactivationRef.current = false;
             }}
           />
         </div>
         <div className="flex gap-4 items-center justify-between">
-          <p>Context window for code suggestions (characters):</p>
+          <p>Context window size for code suggestions (words):</p>
           <div className="flex gap-2 items-center">
             <input
               type="number"
@@ -96,19 +93,19 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
                 <HoverMessage className="w-[400px] absolute right-full top-1/2 -translate-y-[10%] mr-1">
                   <div className="flex flex-col gap-4">
                     <p>
-                      The number of characters that the prompt will include as surrounding
+                      The number of words that are included in the LLM prompts as surrounding
                       context when generating code suggestions for a highlighted passage.
-                      70% of the window goes before the passage, 30% after. A value of 0
+                      70% of the words go before the passage, 30% after. A value of 0
                       means the highlighted passage is included alone with no surrounding
                       context.
                     </p>
                     <p>
-                      After the specified number of characters are reached, the window is
+                      After the specified number of words are reached, the window is
                       cut intelligently (e.g., at a line break, or sentence end).
                     </p>
                     <p>
-                      Larger windows may improve suggestion relevance but increase
-                      response time and cost.
+                      Larger windows may improve suggestion relevance up to a certain point,
+                      but they also increase cost and may decrease suggestion quality and rapidness.
                     </p>
                   </div>
                 </HoverMessage>
@@ -117,7 +114,7 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
           </div>
         </div>
         <div className="flex gap-4 items-center justify-between">
-          <p>Context window for highlight suggestions (characters):</p>
+          <p>Highlight suggestions search area size (words):</p>
           <div className="flex gap-2 items-center">
             <input
               type="number"
@@ -171,10 +168,10 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
           </div>
         </div>
         <div className="flex flex-col w-full">
-          <label htmlFor="codingGuidelines">Coding guidelines for the AI:</label>
+          <label htmlFor="codingGuidelines">Coding guidelines for the LLM:</label>
           <ul className="list-disc ml-3 pb-2 pt-0.5 text-sm">
             <li>
-              The guidelines you type below are automatically included in the AI prompts.
+              Automatically included in the LLM prompts.
             </li>
           </ul>
           <textarea
@@ -284,6 +281,25 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
       >
         <div className="flex justify-between items-center bg-gray-300 w-full h-fit px-6 py-4 rounded-t-lg z-10">
           <p className="text-xl font-semibold">Select examples for the AI</p>
+          {/* <p>Preceding context (words):</p>
+          <input
+            type="number"
+            value={examplesPrecedingContextSize ?? ""}
+            onChange={(e) =>
+              setExamplesPrecedingContextSize(
+                e.target.value === "" ? null : Number(e.target.value)
+              )
+            }
+            onBlur={(e) => {
+              if (e.target.value === "" || e.target.value === null) {
+                setExamplesPrecedingContextSize(0); // Set to minimum value if input is empty
+              }
+            }}
+            onKeyDown={(e) => {
+              e.key === "Enter" && (e.target as HTMLInputElement).blur();
+            }}
+            className="border-1 border-outline rounded-md p-1 max-w-[80px] accent-[#006851]"
+          /> */}
           <XMarkIcon
             title="Close window"
             className="w-8 h-8 p-0.5 flex-shrink-0 rounded-full text-black hover:bg-gray-700/10 cursor-pointer stroke-2"
@@ -294,21 +310,19 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
           {passages
             .filter((p) => p.isHighlighted)
             .map((passage) => {
-              const context = getPassageWithSurroundingContext(
+              const { precedingContext, passageText, trailingContext } = getPassageWithSurroundingContext(
                 passage,
                 passages,
-                50,
-                50,
-                false,
+                20,
+                10,
                 dataIsCSV
               );
-              const passageStartIdx = context.indexOf(passage.text);
               const isInExamples = Boolean(
                 fewShotExamples.find((example) => example.passageId === passage.id)
               );
               return (
                 <>
-                  <div className="flex gap-6 items-center pl-4">
+                  <div key={passage.id} className="flex gap-6 items-center pl-4">
                     <input
                       type="checkbox"
                       className="accent-[#006851]"
@@ -326,15 +340,9 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
                               ...prev,
                               {
                                 passageId: passage.id,
-                                context: getPassageWithSurroundingContext(
-                                  passage,
-                                  passages,
-                                  50,
-                                  50,
-                                  true,
-                                  dataIsCSV
-                                ),
-                                codedPassage: passage.text,
+                                precedingText: precedingContext,
+                                codedPassage: passageText,
+                                trailingText: trailingContext,
                                 codes: passage.codeIds
                                   .map(
                                     (codeId) =>
@@ -355,12 +363,9 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
                           : ""
                       }`}
                     >
-                      <span>{context.slice(0, passageStartIdx)}</span>
+                      <span>{precedingContext}</span>
                       <span className="bg-tertiaryContainer rounded-sm w-fit mr-1">
-                        {context.slice(
-                          passageStartIdx,
-                          passageStartIdx + passage.text.length
-                        )}
+                        {passageText}
                       </span>
                       {passage.codeIds.map((codeId) => {
                         const code = codes.find((c) => c.id === codeId);
@@ -373,7 +378,7 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
                           </span>
                         ) : null;
                       })}
-                      <span>{context.slice(passageStartIdx + passage.text.length)}</span>
+                      <span>{trailingContext}</span>
                     </div>
                   </div>
                   <span className="block my-8 w-full border-t border-outline"></span>
@@ -398,4 +403,4 @@ const CodingSettingsCard = ({ clickedSuggestionsToggleRef }: CodingSettingsCardP
   );
 };
 
-export default CodingSettingsCard;
+export default CodingSettingsCardContent;

@@ -62,7 +62,7 @@ export const usePrompts = () => {
         .map(
           (example) =>
             `{
-  passageWithContext: "${escapeForPrompt(example.context)}",
+  passageWithSurroundingContext: "${escapeForPrompt(example.precedingText + "<<<" + example.codedPassage + ">>>" + example.trailingText)}",
   codes: [${example.codes
     .map((code) => `"${escapeForPrompt(code)}"`)
     .join(", ")}],
@@ -78,22 +78,21 @@ export const usePrompts = () => {
         .sort(() => 0.5 - Math.random())
         .slice(0, randomFewShotExamplesCount)
         .map((p) => {
-          const codedPassage = p.text;
           const passageCodes = p.codeIds
             .map((cid) => codes.find((c) => c.id === cid)?.code || "")
             .filter(Boolean);
-          const surroundingContext = getPassageWithSurroundingContext(
+          const { precedingContext, passageText, trailingContext } = getPassageWithSurroundingContext(
             p,
             passages,
             50,
             50,
-            true,
             dataIsCSV
           );
           return {
-            codedPassage,
-            codes: passageCodes,
-            context: surroundingContext,
+            precedingText: precedingContext,
+            codedPassage: passageText,
+            trailingText: trailingContext,
+            codes: passageCodes
           };
         });
 
@@ -105,7 +104,9 @@ export const usePrompts = () => {
         .map(
           (example) =>
             `{
-  passageWithContext: "${escapeForPrompt(example.context)}",
+  precedingText: "${escapeForPrompt(example.precedingText)}",
+  codedPassage: "${escapeForPrompt(example.codedPassage)}",
+  trailingText: "${escapeForPrompt(example.trailingText)}",
   codes: [${example.codes
     .map((code) => `"${escapeForPrompt(code)}"`)
     .join(", ")}],
@@ -129,13 +130,18 @@ export const usePrompts = () => {
       precedingText?: string,
       searchArea?: string
     ) => {
-      if (!dataIsCSV) {
+      if (!dataIsCSV) { // DATA IS NOT CSV
         return `
 ## ROLE
 You are an expert qualitative coding assistant whose purpose is to provide coding suggestions that mimic the coding style of the user. 
 Your task is to analyze the SEARCH AREA, and identify and code the FIRST passage that is relevant to the research context.
-You should use all provided context and examples as guidance. You must respond only with the specified format.
-
+You must respond only with the specified format.
+${
+  codingGuidelines?.trim()
+    .length > 0
+    ? `\n## USER PROVIDED CODING GUIDELINES\n${codingGuidelines}\n`
+    : ""
+}
 ## RESEARCH CONTEXT
 Research questions: ${researchQuestions}
 ${
@@ -146,27 +152,25 @@ ${
 
 ## TASK
 1. Review the codebook and coding style examples to understand the user's coding style.
+  - User's coding style entails: 
+    (1) how the user selects the coded passage within surrounding context (i.e., which text they highlight as <<<coded>>> versus what remains as context)
+    (2) how the user typically links the meanings of text passages to codes, 
+    (3) the types of concepts they prioritize in their coding, and 
+    (4) the level of detail, wording, and language of the codes.
 2. Find the FIRST subpassage in the SEARCH AREA that helps answer at least one research question 
 (e.g. by describing a reason, experience, mechanism, consequence, or decision related to the topic).
-  - The selected subpassage must match the user's established passage selection style illustrated by the examples.
-  - Mimic the user's typical passage cutting style and length (full sentences/paragraphs vs. fragments, complete thoughts vs. partial ideas).
-  - Include possible metadata (speaker identifiers, timestamps, usernames, etc.) only if the user usually includes them.
-  - If the user's style is unclear, default to the most conservative option (full sentences, minimal length while still capturing meaning, no metadata).
+  - The selected subpassage must match the user's passage selection style illustrated by the examples.
+  - Mimic the user's typical passage cutting style and length (full sentences/paragraphs vs. fragments, complete thoughts vs. partial ideas, metadata included vs. not included).
 3. Coding:
   - Once you find a relevant passage, your task is to assign **1-5 codes** to it.
   - These codes should capture all important aspects of the passage in relation to the research questions.
   - Prioritize code accuracy over reusing codebook codes. Create new codes if needed, ensuring they match the user's coding style.
-  - List codes strictly in order of relevance, with the first listed code being the most relevant. The origin of the code (codebook vs. newly created) should not affect the order.
+  - List codes strictly in order of relevance, with the first listed code being the most relevant. The origins of the codes (codebook vs. newly created) should not affect the order.
   - Avoid overcoding, but ensure all important aspects are covered.
 4. If there is no codeable passage in the SEARCH AREA, return an empty passage and empty codes.
-${
-  codingGuidelines?.trim()
-    .length > 0
-    ? `\n## USER PROVIDED CODING GUIDELINES (**high priority**, but should not affect output format)\n${codingGuidelines}\n`
-    : ""
-}
+
 ## USER'S CODING STYLE
-Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
+Few-shot examples of user coded passages (user highlighted passages marked in context with <<< >>>):
 [${constructFewShotExamplesString(dataIsCSV)}]
 
 ## CURRENT CODEBOOK
@@ -207,11 +211,15 @@ ${
     ? searchArea
     : "<search area will be inserted here>"
 }"`;
-      } else {
+
+
+      } else { // DATA IS CSV
+
         return `
 ## ROLE
-You are an expert qualitative coding assistant. Your task is to identify and code the next relevant passage from the SEARCH AREA, 
-using all provided context and examples as guidance. The data is from a CSV file, where rows end with the token "\\u001E".
+You are an expert qualitative coding assistant whose purpose is to provide coding suggestions that mimic the coding style of the user. 
+Your task is to analyze the SEARCH AREA, and identify and code the FIRST passage that is relevant to the research context.
+The data is from a CSV file, where rows end with the token "\\u001E". You must respond only with the specified format.
 
 ## RESEARCH CONTEXT
 Research questions: ${researchQuestions}
@@ -223,26 +231,34 @@ ${
 
 ## TASK
 1. Review the codebook and coding style examples to understand the user's coding style.
-2. Find the FIRST subpassage in the SEARCH AREA that provides meaningful insight related to the research context.
-  - Selection style (length, cropping, detail) should mimic the examples.
+  - User's coding style entails: 
+    (1) how the user selects the coded passage within surrounding context (i.e., which text they highlight as <<<coded>>> versus what remains as context)
+    (2) how the user typically links the meanings of text passages to codes, 
+    (3) the types of concepts they prioritize in their coding, and 
+    (4) the level of detail, wording, and language of the codes.
+2. Find the FIRST subpassage in the SEARCH AREA that helps answer at least one research question 
+(e.g. by describing a reason, experience, mechanism, consequence, or decision related to the topic).
+  - The selected subpassage must match the user's established passage selection style illustrated by the examples.
+  - Mimic the user's typical passage cutting style and length (full sentences/paragraphs vs. fragments, complete thoughts vs. partial ideas).
+  - Include possible metadata (speaker identifiers, timestamps, usernames, etc.) only if the user usually includes them.
+  - If the user's style is unclear, default to the most conservative option (full sentences, minimal length while still capturing meaning, no metadata).
   - The search area may start mid-row; if so, ensure your selected passage does not include any text before the start of the search area.
   - The suggested passage must NOT span over multiple CSV rows (i.e. the end of row token \\u001E must never occur in the middle of your suggestion).
 3. Coding:
-  - If you find a relevant passage, assign **1-5 codes** to it.
-  - If you cannot assign at least one code, **do not suggest that passage**.
-  - Reuse codebook codes if they fit the passage.
-  - Create new codes if all the aspects of the passage can not be covered with codebook codes, ensuring the new codes match the user's coding style.
-  - List codes strictly in order of relevance. The origin of the code (codebook vs. newly created) should not affect the order.
-  - Cover all important aspects, but avoid overcoding.
-4. If there is **no codeable passage** in the SEARCH AREA, return an empty passage and empty codes.
+  - Once you find a relevant passage, your task is to assign **1-5 codes** to it.
+  - These codes should capture all important aspects of the passage in relation to the research questions.
+  - Prioritize code accuracy over reusing codebook codes. Create new codes if needed, ensuring they match the user's coding style.
+  - List codes strictly in order of relevance, with the first listed code being the most relevant. The origin of the code (codebook vs. newly created) should not affect the order.
+  - Avoid overcoding, but ensure all important aspects are covered.
+4. If there is no codeable passage in the SEARCH AREA, return an empty passage and empty codes.
 ${
   codingGuidelines?.trim()
     .length > 0
-    ? `\n## USER PROVIDED CODING GUIDELINES\n${codingGuidelines}\n`
+    ? `\n## USER PROVIDED CODING GUIDELINES (**high priority**, but should not affect response format)\n${codingGuidelines}\n`
     : ""
 }
 ## USER'S CODING STYLE
-Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
+Few-shot examples of user coded passages (user highlighted passages marked in context with <<< >>>):
 [${constructFewShotExamplesString(dataIsCSV)}]
 
 ## CURRENT CODEBOOK
@@ -299,7 +315,8 @@ ${
     (
       dataIsCSV: boolean,
       passage?: Passage,
-      passageWithSurroundingContext?: string
+      precedingText?: string,
+      trailingText?: string
     ) => {
       const existingCodes = passage
         ? passage.codeIds
@@ -314,8 +331,7 @@ ${
 
       return `
 ## ROLE
-You are a qualitative coding assistant for code autocompletion. Given a passage and its surrounding context, 
-suggest a broad set of relevant codes to maximize autocomplete matches.
+You are a qualitative coding assistant for code autocompletion. Given a passage to code, its surrounding context, and examples of the user's coding style, suggest a broad set of relevant codes that aim to mimic the user's coding style and maximize autocomplete matches.
 
 ## RESEARCH CONTEXT
 Research questions: ${researchQuestions}
@@ -326,21 +342,28 @@ ${
 }
 
 ## TASK
-1. Think of 3-6 core codes, each conceptually distinct from existing codes.
-  - Do NOT output any existing code, or any code that is just a paraphrase or trivial rewording of them.
-2. For each core code, provide 3-6 alternative phrasings.
-  - This adds up to total suggestions being 9-36 codes.
-  - Use the user's coding style for wording and format.
-  - Aim for breadth and variety in your suggestions, maximizing autocomplete matches.
-  - Ensure all suggested codes are relevant to the research questions and context.
+Your task is to suggest 30-50 (depending on the complexity of the passage) codes for the given passage that align with the user's coding style and 
+cover relevant aspects of the passage in relation to the research questions (i.e. help answer the research questions).
+  - Use the codebook and the few-shot examples to understand the user's coding style. 
+  - User's coding style entails: 
+    (1) how the user typically links the meanings of text passages to codes, 
+    (2) the types of concepts they prioritize in their coding, and 
+    (3) the level of detail, wording, and language of the codes.
+  - Using the user's coding style, suggest a broad set of codes that could be relevant for the passage. 
+  - Aim for breadth and variety in your suggestions, covering different angles and aspects of the passage, and including varying wordings of similar concepts.
+  - The goal is to maximize the likelihood of autocomplete matches.
+  Constraints:
+  - You must NOT include codebook codes or existing codes of the passage in your suggestions.
+  - You must NOT suggest codes that are semantically identical or very similar to codebook codes or existing codes of the passage. 
+    However, you can suggest variations that are related but not semantically identical.
 ${
   codingGuidelines?.trim()
     .length > 0
-    ? `\n## USER PROVIDED CODING GUIDELINES\n${codingGuidelines}\n`
+    ? `\n## USER PROVIDED CODING GUIDELINES (**high priority**, but should not affect response format)\n${codingGuidelines}\n`
     : ""
 }
 ## USER'S CODING STYLE
-Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
+Few-shot examples of user coded passages (user highlighted passages marked in context with <<< >>>):
 [${constructFewShotExamplesString(dataIsCSV)}]
 
 ## CURRENT CODEBOOK
@@ -367,19 +390,19 @@ Respond ONLY with a JSON array of code strings, e.g. ["code1", "code2", "code3"]
 No explanations. No JSON tags (\`\`\`json) or other markdown formatting. Codes must never contain semicolons (;).
 
 ## CONTEXT WINDOW
-The target passage appears in the context window between "<<<" and ">>>".
 ${
   dataIsCSV
-    ? `The data is from a CSV file, where rows end with the token "\u001E".`
+    ? `The data is from a CSV file, where rows end with the token "\\u001E".`
     : ""
 }
-<START OF CONTEXT WINDOW>
-"${
-  passageWithSurroundingContext
-    ? passageWithSurroundingContext
-    : "<target passage with surrounding context will be inserted here>"
-}"
-<END OF CONTEXT WINDOW>
+** PRECEDING CONTEXT (for understanding only) **
+"${precedingText ?? "<preceding text will be inserted here>"}"
+
+** TARGET PASSAGE TO CODE **
+"${passage ?? "<passage to code will be inserted here>"}"
+
+** TRAILING CONTEXT (for understanding only) **
+"${trailingText ?? "<trailing text will be inserted here>"}"
 `;
     };
 
@@ -394,7 +417,8 @@ ${
     (
       dataIsCSV: boolean,
       passage?: Passage,
-      passageWithSurroundingContext?: string
+      precedingText?: string,
+      trailingText?: string
     ) => {
       const existingCodes = passage
         ? passage.codeIds
@@ -421,6 +445,10 @@ ${
 }
 
 ## TASK
+Your task is to suggest codes for the given passage that align with the research questions and the user's coding style.
+  - User's coding style entails: (1) how the user typically links the meanings of text passages to codes, 
+    (2) the types of concepts they prioritize, and (3) the level of detail, wording, and language of the codes.
+** Based on the passage's existing codes, follow one of these two cases: **
 Case 1 - If the passage has NO existing codes: 
   - Provide a comprehensive coding for the passage. Suggest max 5 conceptually distinct codes that capture what the passage reveals in relation to the research questions.
 Case 2 - If the passage has existing codes:
@@ -433,11 +461,11 @@ In both cases:
 ${
   codingGuidelines?.trim()
     .length > 0
-    ? `\n## USER PROVIDED CODING GUIDELINES\n${codingGuidelines}\n`
+    ? `\n## USER PROVIDED CODING GUIDELINES (**high priority**, but should not affect response format)\n${codingGuidelines}\n`
     : ""
 }
 ## USER'S CODING STYLE
-Few-shot examples of user coded passages (coded passage marked in context with <<< >>>):
+Few-shot examples of user coded passages (user highlighted passages marked in context with <<< >>>):
 [${constructFewShotExamplesString(dataIsCSV)}]
 
 ## CURRENT CODEBOOK
@@ -464,19 +492,19 @@ Respond ONLY with a JSON array of code strings, e.g. ["code1", "code2", "code3"]
 No explanations. No JSON tags (\`\`\`json) or other markdown formatting. Codes must never contain semicolons (;).
 
 ## CONTEXT WINDOW
-The target passage appears in the context window between "<<<" and ">>>".
 ${
   dataIsCSV
     ? `The data is from a CSV file, where rows end with the token "\\u001E".`
     : ""
 }
-<START OF CONTEXT WINDOW>
-"${
-  passageWithSurroundingContext
-    ? passageWithSurroundingContext
-    : "<target passage with surrounding context will be inserted here>"
-}"
-<END OF CONTEXT WINDOW>
+** PRECEDING CONTEXT (for understanding only) **
+"${precedingText ?? "<preceding text will be inserted here>"}"
+
+** TARGET PASSAGE TO CODE **
+"${passage ?? "<passage to code will be inserted here>"}"
+
+** TRAILING CONTEXT (for understanding only) **
+"${trailingText ?? "<trailing text will be inserted here>"}"
 `;
     };
 

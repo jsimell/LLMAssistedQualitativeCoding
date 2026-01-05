@@ -1,9 +1,46 @@
 import { Code, Passage } from "../../../../context/WorkflowContext";
 
+
 /**
- * Returns a tail slice of text. First includes text up to minimumLength, then looks for a suitable cut point within the preceding cutWindowSize characters.
+ * A helper to get the n first words from a text.
+ * @param text The text to extract words from
+ * @param n The number of words to extract
+ * @returns A string containing the first n words from the text
+ */
+const getFirstNWords = (text: string, n: number): string => {
+  if (n <= 0) return "";
+
+  const wordRegex = /\S+/g;
+  let match;
+  let count = 0;
+  let endIndex = 0;
+
+  while ((match = wordRegex.exec(text)) !== null) {
+    count++;
+    if (count === n) {
+      endIndex = match.index + match[0].length;
+      break;
+    }
+  }
+
+  return text.slice(0, endIndex);
+};
+
+
+/**
+ * A helper for counting the number of words in a text.
+ * @param text The text to count words in
+ * @returns The number of words in the text
+ */
+const countWords = (text: string): number => {
+  const matches = text.match(/\S+/g);
+  return matches ? matches.length : 0;
+};
+
+/**
+ * Returns a tail slice of text. First includes text up to minimumLength words, then looks for a suitable cut point within the preceding cutWindowSize characters.
  * @param text text to cut
- * @param minimumLength the number of characters after which to start looking for a cut point
+ * @param minimumLength the number of words after which to start looking for a cut point
  * @param cutWindowSize the maximum number of characters to look for a cut point
  * @returns the text cut at a suitable point
  */
@@ -13,20 +50,23 @@ export const getPrecedingContext = (
   cutWindowSize: number
 ) => {
   // If text is already short enough, return it as is
-  if (text.length <= minimumLength) {
+  if (countWords(text) <= minimumLength) {
     return text;
   }
 
-  // First, take the minimumLength part
-  let includedText = text.slice(text.length - minimumLength);
+  // Reverse the text to allow using getFirstNWords directly for taking the last minimumLength words of the text
+  const reversedText = [...text].reverse().join("");
 
-  // Then, look for a suitable cut point in the preceding cutWindowSize characters
+  // Take the last minimumLength words
+  let includedText = getFirstNWords(reversedText, minimumLength).split("").reverse().join("");
+
+  // Then, look for a suitable cut point in the preceding cutWindowSize characters BEFORE the minimumLength words
   const cutWindow = text.slice(
-    Math.max(text.length - minimumLength - cutWindowSize, 0),
-    text.length - minimumLength
+    Math.max(text.length - includedText.length - cutWindowSize, 0),
+    text.length - includedText.length
   );
 
-  // If cut window is shorter than cutWindowSize ->  entire text fits in minimumLength + cutWindowSize
+  // If cut window is shorter than cutWindowSize (start of data reached) ->  entire text fits in minimumLength + cutWindowSize
   if (cutWindow.length < cutWindowSize) {
     includedText = cutWindow + includedText;
     return includedText;
@@ -41,9 +81,10 @@ export const getPrecedingContext = (
 
   // Next, look for sentence ending punctuation
   const sentenceEndIdx = Math.max(
-    cutWindow.lastIndexOf("."),
-    cutWindow.lastIndexOf("!"),
-    cutWindow.lastIndexOf("?")
+    cutWindow.lastIndexOf(". "),
+    cutWindow.lastIndexOf("! "),
+    cutWindow.lastIndexOf("? "),
+    cutWindow.lastIndexOf("... "),
   );
   if (sentenceEndIdx !== -1) {
     includedText = cutWindow.slice(sentenceEndIdx + 1) + includedText;
@@ -68,17 +109,18 @@ export const getTrailingContext = (
   cutWindowSize: number
 ) => {
   // If text is already short enough, return it as is
-  if (text.length <= minimumLength) {
+  if (countWords(text) <= minimumLength) {
     return text;
   }
 
-  // First, take the minimumLength part
-  let includedText = text.slice(0, minimumLength);
+  // First, take the first minimumLength words
+  let includedText = getFirstNWords(text, minimumLength);
 
   // Then, look for a suitable cut point in the next cutSearchArea characters
-  const cutWindow = text.slice(minimumLength, minimumLength + cutWindowSize);
+  const cutWindowStartIdx = includedText.length;
+  const cutWindow = text.slice(cutWindowStartIdx, cutWindowStartIdx + cutWindowSize);
 
-  // If cut window is shorter than cutWindowSize ->  entire text fits in minimumLength + cutWindowSize
+  // If cut window is shorter than cutWindowSize (end of data reached) ->  entire text fits in minimumLength + cutWindowSize
   if (cutWindow.length < cutWindowSize) {
     includedText = includedText + cutWindow;
     return includedText;
@@ -93,9 +135,10 @@ export const getTrailingContext = (
 
   // Look for sentence ending punctuation (pick earliest non-negative index)
   const candidates = [
-    cutWindow.indexOf("."),
-    cutWindow.indexOf("!"),
-    cutWindow.indexOf("?"),
+    cutWindow.indexOf(". "),
+    cutWindow.indexOf("! "),
+    cutWindow.indexOf("? "),
+    cutWindow.indexOf("... "),
   ].filter((i) => i !== -1);
   const sentenceEndIdx = candidates.length ? Math.min(...candidates) : -1;
 
@@ -177,9 +220,8 @@ export const getPassageWithSurroundingContext = (
   passages: Passage[],
   minPrecedingContext: number,
   minTrailingContext: number,
-  markPassageInResult: boolean,
   dataIsCSV: boolean
-): string => {
+): { precedingContext: string; passageText: string; trailingContext: string } => {
   const passageOrder = passage.order;
 
   // Obtain preceding context based on whether passages are from CSV or not
@@ -205,11 +247,7 @@ export const getPassageWithSurroundingContext = (
     trailingContext = getTrailingContext(trailingText, minTrailingContext, 300);
   }
 
-  if (markPassageInResult) {
-    return `${precedingContext}<<<${passage.text}>>>${trailingContext}`;
-  } else {
-    return `${precedingContext}${passage.text}${trailingContext}`;
-  }
+  return { precedingContext, passageText: passage.text, trailingContext };
 };
 
 /**

@@ -37,24 +37,19 @@ const CodeSummaryWindowContent = ({
           .map((c) => {
             const passage = passages.find((p) => p.id === c.passageId);
             if (!passage) return null;
-            const context = getPassageWithSurroundingContext(
+            const { precedingContext, passageText, trailingContext } = getPassageWithSurroundingContext(
               passage,
               passages,
-              50,
-              50,
-              false,
+              20,
+              15,
               dataIsCSV
             );
-            const passageStartIdx = context.indexOf(passage.text);
             return (
               <>
                 <div key={c.id}>
-                  <span>{context.slice(0, passageStartIdx)}</span>
+                  <span>{precedingContext}</span>
                   <span className="bg-tertiaryContainer rounded-sm w-fit mr-1">
-                    {context.slice(
-                      passageStartIdx,
-                      passageStartIdx + passage.text.length
-                    )}
+                    {passageText}
                   </span>
                   {passage.codeIds.map((codeId) => {
                     const code = codes.find((c) => c.id === codeId);
@@ -67,7 +62,7 @@ const CodeSummaryWindowContent = ({
                       </span>
                     ) : null;
                   })}
-                  <span>{context.slice(passageStartIdx + passage.text.length)}</span>
+                  <span>{trailingContext}</span>
                 </div>
                 <span className="block my-5 w-full border-t border-outline"></span>
               </>

@@ -29,7 +29,6 @@ export const useCodeSuggestions = () => {
     apiKey,
     passages,
     codeSuggestionContextWindowSize,
-    codingGuidelines,
   } = context;
 
   const { generateCodeSuggestionsPrompt, generateAutocompleteSuggestionsPrompt } = usePrompts();
@@ -50,19 +49,19 @@ export const useCodeSuggestions = () => {
    */
   const getCodeSuggestions = useCallback(
     async (passage: Passage) => {
-      const passageWithContext = getPassageWithSurroundingContext(
+      const { precedingContext, passageText, trailingContext } = getPassageWithSurroundingContext(
           passage,
           passages,
           precedingContextSize,
           trailingContextSize,
-          true,
           dataIsCSV
         );
 
       const systemPrompt = generateCodeSuggestionsPrompt(
         dataIsCSV,
         passage,
-        passageWithContext
+        precedingContext,
+        trailingContext
       );
 
       let response = await callOpenAIStateless(
@@ -112,19 +111,19 @@ export const useCodeSuggestions = () => {
    */
   const getAutocompleteSuggestions = useCallback(
     async (passage: Passage) => {
-      const passageWithContext = getPassageWithSurroundingContext(
+      const { precedingContext, passageText, trailingContext } = getPassageWithSurroundingContext(
           passage,
           passages,
           precedingContextSize,
           trailingContextSize,
-          true,
           dataIsCSV
         )
 
       const systemPrompt = generateAutocompleteSuggestionsPrompt(
         dataIsCSV,
         passage,
-        passageWithContext
+        precedingContext,
+        trailingContext
       );
 
       let response = await callOpenAIStateless(
