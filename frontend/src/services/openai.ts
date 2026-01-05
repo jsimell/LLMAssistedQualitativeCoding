@@ -102,6 +102,7 @@ export const statefullyCallOpenAI = async (
     return openai.responses.create({
       conversation: currentConversation.id,
       model: model,
+      store: false,
       input: userPrompt,
     });
   });
@@ -122,20 +123,21 @@ export const statefullyCallOpenAI = async (
 export const callOpenAIStateless = async (
   apiKey: string,
   prompt: string,
-  model: string = "gpt-4o-mini"
+  model: string = "gpt-4.1-mini"
 ): Promise<OpenAI.Responses.Response> => {
   const openai = getOpenAIinstance(apiKey);
 
   if (!acceptedModels.includes(model)) {
     console.warn(
-      `Model "${model}" is not in the list of accepted models. Defaulting to "gpt-4o-mini".`
+      `Model "${model}" is not in the list of accepted models. Defaulting to "gpt-4.1-mini".`
     );
-    model = "gpt-4o-mini";
+    model = "gpt-4.1-mini";
   }
 
   // Create a single model response (no caching)
   const response = await openai.responses.create({
     model: model,
+    store: false,
     input: prompt,
   });
 
