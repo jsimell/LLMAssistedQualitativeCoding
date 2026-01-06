@@ -139,6 +139,12 @@ export interface WorkflowContextType {
   fewShotExamplesSelectionMode: "random" | "manual";
   setFewShotExamplesSelectionMode: Setter<"random" | "manual">;
 
+  examplesPrecedingContextSize: number | null;
+  setExamplesPrecedingContextSize: Setter<number | null>;
+
+  examplesTrailingContextSize: number | null;
+  setExamplesTrailingContextSize: Setter<number | null>;
+
   randomFewShotExamplesCount: number;
   setRandomFewShotExamplesCount: Setter<number>;
 
@@ -179,15 +185,17 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   const [activeCodeId, setActiveCodeId] = useState<CodeId | null>(null);
   const [aiSuggestionsEnabled, setAiSuggestionsEnabled] = useState<boolean>(true); // Global toggle
   const [codeSuggestionContextWindowSize, setCodeSuggestionContextWindowSize] = useState<number | null>(
-    200
+    50
   ); // Number of characters in the context window ffor code and autocomplete suggestions
   const [highlightSuggestionContextWindowSize, setHighlightSuggestionContextWindowSize] = useState<number | null>(
-    600
+    500
   ); // Number of characters in the context window for highlight suggestions
   const [fewShotExamples, setFewShotExamples] = useState<FewShotExample[]>([]); // Few-shot examples for AI suggestions
   const [fewShotExamplesSelectionMode, setFewShotExamplesSelectionMode] = useState<"random" | "manual">("random");
+  const [examplesPrecedingContextSize, setExamplesPrecedingContextSize] = useState<number | null>(30);
+  const [examplesTrailingContextSize, setExamplesTrailingContextSize] = useState<number | null>(15);
   const [randomFewShotExamplesCount, setRandomFewShotExamplesCount] = useState<number>(10);
-  const [showCodingInstructionsOverlay, setShowCodingInstructionsOverlay] = useState<boolean>(false);
+  const [showCodingInstructionsOverlay, setShowCodingInstructionsOverlay] = useState<boolean>(true); // Show the coding instructions overlay on first load of the coding step
 
 
   // Ensure that all the distinct codes in 'codes' are also in 'codebook', and that codebook has no codes that are not in 'codes'
@@ -297,6 +305,10 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
     setFewShotExamples,
     fewShotExamplesSelectionMode,
     setFewShotExamplesSelectionMode,
+    examplesPrecedingContextSize,
+    setExamplesPrecedingContextSize,
+    examplesTrailingContextSize,
+    setExamplesTrailingContextSize,
     randomFewShotExamplesCount,
     setRandomFewShotExamplesCount,
     showCodingInstructionsOverlay,

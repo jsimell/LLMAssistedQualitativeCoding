@@ -9,6 +9,9 @@ import InfoBox from "../../InfoBox";
 import { useCodeManager } from "./hooks/useCodeManager";
 import CodingSidePanel from "./CodingSidePanel";
 import CodingSettingsCardContent from "./CodingSettingsCard";
+import InstructionsContent from "./InstructionsContent";
+import OverlayWindow from "../../OverlayWindow";
+
 
 const CodingCardContent = () => {
   // Get global states and setters from the context
@@ -16,6 +19,7 @@ const CodingCardContent = () => {
   if (!context) {
     throw new Error("WorkflowContext must be used within a WorkflowProvider");
   }
+
   const {
     passages,
     passagesPerColumn,
@@ -26,6 +30,8 @@ const CodingCardContent = () => {
     csvHeaders,
     setProceedAvailable,
     setVisitedSteps,
+    showCodingInstructionsOverlay,
+    setShowCodingInstructionsOverlay,
   } = context;
 
   // Custom hooks
@@ -69,15 +75,20 @@ const CodingCardContent = () => {
   const preventCodeBlobDeactivationRef = useRef<boolean>(false);
 
   /**
-   * Proceed should be available by default.
-   * Also, make it possible to proceed to the next step through the sidebar as well
+   * ON MOUNT: Proceed should be available by default.
+   * Also, make it possible to proceed to the next step through the sidebar as well.
+   * On the first time user arrives here, show the instructions overlay.
    */
   useEffect(() => {
     setProceedAvailable(true);
     setVisitedSteps((prev) => {
-      const updated = new Set(prev);
-      updated.add(6); // 6 is the next step after this one
-      return updated;
+      // IF not visited yet mark this step as visited
+      if (!prev.has(6)) {
+        const updated = new Set(prev);
+        updated.add(6); // 6 is the next step after this one
+        return updated;
+      }
+      return prev;
     });
   }, []);
 
@@ -473,6 +484,16 @@ const CodingCardContent = () => {
           </div>
         )}
       </div>
+      {showCodingInstructionsOverlay && (
+        <OverlayWindow
+          isVisible={showCodingInstructionsOverlay}
+          onClose={() => setShowCodingInstructionsOverlay(false)}
+          widthClass="max-w-[80%]"
+          heightClass="max-h-[80%]"
+        >
+          <InstructionsContent setShowCodingInstructionsOverlay={setShowCodingInstructionsOverlay} />
+        </OverlayWindow>
+      )}
     </div>
   );
 };

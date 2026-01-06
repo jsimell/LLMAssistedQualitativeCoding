@@ -4,8 +4,8 @@ interface OverlayWindowProps {
   isVisible: boolean;
   onClose: () => void;
   onConfirm?: () => void; // Function for confirmation use case
-  maxWidth?: string; // Optional maxWidth class for the overlay window
-  maxHeight?: string; // Optional maxHeight class for the overlay window
+  widthClass?: string; // Optional width style class for the overlay window
+  heightClass?: string; // Optional height style class for the overlay window
   children?: React.ReactNode;
 }
 
@@ -13,8 +13,8 @@ const OverlayWindow: React.FC<OverlayWindowProps> = ({
   isVisible,
   onClose,
   onConfirm,
-  maxWidth = "max-w-[80vw]",
-  maxHeight = "max-h-[80vh]",
+  widthClass = "max-w-[80vw]",
+  heightClass = "max-h-[80vh]",
   children,
 }) => {
   // Lock background scroll while the overlay is visible
@@ -43,7 +43,7 @@ const OverlayWindow: React.FC<OverlayWindowProps> = ({
     >
       <div
         className={`
-          bg-background rounded-lg shadow-xl w-fit h-fit ${maxWidth} ${maxHeight}
+          bg-background rounded-lg shadow-xl w-fit h-fit overflow-y-auto ${widthClass} ${heightClass}
         `} 
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the window
       >

@@ -223,7 +223,7 @@ const Codebook = ({ codeManager }: CodebookProps) => {
           </div>
         )}
       </div>
-      <OverlayWindow isVisible={showCodeSummaryFor !== null} onClose={() => setShowCodeSummaryFor(null)} maxWidth="max-w-[60vw]" maxHeight="max-h-[60vh]">
+      <OverlayWindow isVisible={showCodeSummaryFor !== null} onClose={() => setShowCodeSummaryFor(null)} widthClass="max-w-[60vw]" heightClass="max-h-[60vh]">
         <CodeSummaryWindowContent 
           showCodeSummaryFor={showCodeSummaryFor} 
           setShowCodeSummaryFor={setShowCodeSummaryFor} 

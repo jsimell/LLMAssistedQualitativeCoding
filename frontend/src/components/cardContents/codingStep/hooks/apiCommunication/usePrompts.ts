@@ -26,7 +26,9 @@ export const usePrompts = () => {
     passages,
     codes,
     fewShotExamplesSelectionMode,
-    randomFewShotExamplesCount
+    randomFewShotExamplesCount,
+    examplesPrecedingContextSize,
+    examplesTrailingContextSize,
   } = context;
 
   /**
@@ -85,8 +87,8 @@ export const usePrompts = () => {
           const { precedingContext, passageText, trailingContext } = getPassageWithSurroundingContext(
             p,
             passages,
-            50,
-            50,
+            examplesPrecedingContextSize ?? 30,
+            examplesTrailingContextSize ?? 15,
             dataIsCSV
           );
           return {
