@@ -141,12 +141,12 @@ Your task is to analyze the SEARCH AREA, and identify and code the FIRST passage
 You must respond only with the specified format.
 
 ## USER PROVIDED GUIDELINES
-**Coding style:** ${codingGuidelines ?? "Not provided."}
-**Passage selection style:** ${highlightGuidelines ?? "Not provided."}
+Coding style: ${codingGuidelines.trim().length > 0 ? codingGuidelines : "-"}
+Passage selection style: ${highlightGuidelines?.trim().length > 0 ? highlightGuidelines : "-"}
 
 ## RESEARCH CONTEXT
 Research questions: ${researchQuestions}
-Additional research context: ${contextInfo ?? "-"}
+Additional research context: ${contextInfo.trim().length > 0 ? contextInfo : "-"}
 
 ## TASK
 1. Review the codebook and coding style examples to understand the user's coding style.
@@ -230,12 +230,12 @@ Your task is to analyze the SEARCH AREA, and identify and code the FIRST passage
 The data is from a CSV file, where rows end with the token "\\u001E". You must respond only with the specified format.
 
 ## USER PROVIDED GUIDELINES
-**Coding style:** ${codingGuidelines ?? "Not provided."}
-**Passage selection style:** ${highlightGuidelines ?? "Not provided."}
+Coding style: ${codingGuidelines.trim().length > 0 ? codingGuidelines : "-"}
+Passage selection style: ${highlightGuidelines?.trim().length > 0 ? highlightGuidelines : "-"}
 
 ## RESEARCH CONTEXT
 Research questions: ${researchQuestions}
-Additional research context: ${contextInfo ?? "-"}
+Additional research context: ${contextInfo.trim().length > 0 ? contextInfo : "-"}
 
 ## TASK
 1. Review the codebook and coding style examples to understand the user's coding style.
@@ -345,11 +345,11 @@ ${
 You are a qualitative coding assistant for code autocompletion. Given a passage to code, its surrounding context, and examples of the user's coding style, suggest a broad set of relevant codes that aim to mimic the user's coding style and maximize autocomplete matches.
 
 ## USER PROVIDED CODE STYLE GUIDELINES:
-${codingGuidelines}
+${codingGuidelines.trim().length > 0 ? codingGuidelines : "None."}
 
 ## RESEARCH CONTEXT
 Research questions: ${researchQuestions}
-Additional research context: ${contextInfo ?? "-"}
+Additional research context: ${contextInfo.trim().length > 0 ? contextInfo : "-"}
 
 ## TASK
 Your task is to suggest 30-50 (depending on the complexity of the passage) codes for the given passage that align with the user's coding style and 
@@ -451,11 +451,11 @@ You are a qualitative coding assistant. Given a passage and its surrounding cont
 suggest relevant codes for the passage according to the instructions and information provided below.
 
 ## USER PROVIDED CODE STYLE GUIDELINES:
-${codingGuidelines}
+${codingGuidelines.trim().length > 0 ? codingGuidelines : "None."}
 
 ## RESEARCH CONTEXT
 Research questions: ${researchQuestions}
-Additional research context: ${contextInfo ?? "-"}
+Additional research context: ${contextInfo.trim().length > 0 ? contextInfo : "-"}
 
 ## TASK
 Your task is to suggest codes for the given passage that align with the research questions and the user's coding style.
