@@ -33,6 +33,8 @@ const CodingSettingsCardContent = ({ preventCodeBlobDeactivationRef }: CodingSet
     setHighlightSuggestionContextWindowSize,
     codingGuidelines,
     setCodingGuidelines,
+    highlightGuidelines,
+    setHighlightGuidelines,
     fewShotExamplesSelectionMode,
     setFewShotExamplesSelectionMode,
     randomFewShotExamplesCount,
@@ -168,7 +170,7 @@ const CodingSettingsCardContent = ({ preventCodeBlobDeactivationRef }: CodingSet
           </div>
         </div>
         <div className="flex flex-col w-full">
-          <label htmlFor="codingGuidelines">Coding guidelines for the LLM:</label>
+          <label htmlFor="codingGuidelines">Code style guidelines for the LLM:</label>
           <ul className="list-disc ml-3 pb-2 pt-0.5 text-sm">
             <li>
               Automatically included in the LLM prompts.
@@ -178,6 +180,20 @@ const CodingSettingsCardContent = ({ preventCodeBlobDeactivationRef }: CodingSet
             id="codingGuidelines"
             value={codingGuidelines}
             onChange={(e) => setCodingGuidelines(e.target.value)}
+            className="flex-1 border-1 border-outline rounded-md p-1 accent-[#006851]"
+          />
+        </div>
+        <div className="flex flex-col w-full">
+          <label htmlFor="codingGuidelines">Highlight selection guidelines for the LLM:</label>
+          <ul className="list-disc ml-3 pb-2 pt-0.5 text-sm">
+            <li>
+              Automatically included in the LLM prompts.
+            </li>
+          </ul>
+          <textarea
+            id="codingGuidelines"
+            value={highlightGuidelines}
+            onChange={(e) => setHighlightGuidelines(e.target.value)}
             className="flex-1 border-1 border-outline rounded-md p-1 accent-[#006851]"
           />
         </div>
@@ -242,7 +258,7 @@ const CodingSettingsCardContent = ({ preventCodeBlobDeactivationRef }: CodingSet
                   onMouseLeave={() => setShowFewShotHoverMsg(false)}
                 />
                 {showFewShotHoverMsg && (
-                  <HoverMessage className="w-[400px] absolute right-full top-1/2 -translate-y-[10%] mr-1">
+                  <HoverMessage className="w-[400px] absolute right-full top-1/2 -translate-y-[90%] mr-1">
                     <div className="flex flex-col gap-4">
                       <p>
                         The system will randomly select the specified number of few-shot

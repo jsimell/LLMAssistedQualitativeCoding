@@ -18,6 +18,7 @@ export const usePrompts = () => {
   const {
     researchQuestions,
     codingGuidelines,
+    highlightGuidelines,
     fewShotExamples,
     codebook,
     importedCodes,
@@ -136,45 +137,35 @@ export const usePrompts = () => {
 You are an expert qualitative coding assistant whose purpose is to provide coding suggestions that mimic the coding style of the user. 
 Your task is to analyze the SEARCH AREA, and identify and code the FIRST passage that is relevant to the research context.
 You must respond only with the specified format.
-${
-  codingGuidelines?.trim()
-    .length > 0
-    ? `\n## USER PROVIDED CODING GUIDELINES\n${codingGuidelines}\n`
-    : ""
-}
+
+## USER PROVIDED GUIDELINES
+**Coding style:** ${codingGuidelines ?? "Not provided."}
+**Passage selection style:** ${highlightGuidelines ?? "Not provided."}
+
 ## RESEARCH CONTEXT
 Research questions: ${researchQuestions}
-${
-  contextInfo
-    ? `Additional research context: ${contextInfo}`
-    : ""
-}
+Additional research context: ${contextInfo ?? "-"}
 
 ## TASK
 1. Review the codebook and coding style examples to understand the user's coding style.
   - User's coding style entails: 
     (1) how the user selects the coded passage within surrounding context (i.e., which text they highlight as <<<coded>>> versus what remains as context)
     (2) how the user typically links the meanings of text passages to codes, 
-    (3) the types of concepts they prioritize in their coding, and 
+    (3) the types of concepts they prioritize in their coding, and
     (4) the level of detail, wording, and language of the codes.
 2. Find the FIRST subpassage in the SEARCH AREA that helps answer at least one research question 
 (e.g. by describing a reason, experience, mechanism, consequence, or decision related to the topic).
-  - The selected subpassage must match the user's passage selection style illustrated by the examples.
-  - Mimic the user's typical passage cutting style and length (full sentences/paragraphs vs. fragments, complete thoughts vs. partial ideas, metadata included vs. not included).
+  - Your subpassage selection must match the user's passage selection style illustrated by the examples.
+  - The selection style must obey the USER PROVIDED GUIDELINES above (if provided).
+  - Mimic the user's typical passage cutting style and length (full sentences/paragraphs vs. fragments, complete thoughts vs. partial ideas).
 3. Coding:
   - Once you find a relevant passage, your task is to assign **1-5 codes** to it.
+  - The coding style must obey the USER PROVIDED GUIDELINES above (if provided).
   - These codes should capture all important aspects of the passage in relation to the research questions.
   - Prioritize code accuracy over reusing codebook codes. Create new codes if needed, ensuring they match the user's coding style.
   - List codes strictly in order of relevance, with the first listed code being the most relevant. The origins of the codes (codebook vs. newly created) should not affect the order.
   - Avoid overcoding, but ensure all important aspects are covered.
 4. If there is no codeable passage in the SEARCH AREA, return an empty passage and empty codes.
-
-## USER'S CODING STYLE
-Few-shot examples of user coded passages (user highlighted passages marked in context with <<< >>>):
-[${constructFewShotExamplesString(dataIsCSV)}]
-
-## CURRENT CODEBOOK
-[${constructCodebookString()}]
 
 ## RESPONSE FORMAT
 Respond ONLY with a valid JavaScript object:
@@ -194,6 +185,21 @@ Codes must NOT contain semicolons (;).
 Use similar casing as the codebook, or default to lowercase.
 The "passage" MUST be an exact, case-sensitive substring of the SEARCH AREA.
 Escape special characters in "passage" (e.g. double quotes as \\", newlines as \\n, tabs as \\t).
+
+## AUTHORITY AND PRECEDENCE RULES (STRICT)
+When determining behavior:
+1. RESPONSE FORMAT rules are absolute and MUST NOT be altered under any circumstances.
+2. USER PROVIDED GUIDELINES have the highest authority for code content and MUST be followed if present.
+3. Few-shot examples illustrate the user's typical style ONLY where they do not conflict with the guidelines.
+4. If there is any conflict or ambiguity between guidelines and examples, ALWAYS follow the USER PROVIDED GUIDELINES.
+All TASK requirements remain mandatory and must be fulfilled unless they directly conflict with RESPONSE FORMAT rules.
+
+## USER'S CODING STYLE
+Few-shot examples of user coded passages (user highlighted passages marked in context with <<< >>>):
+[${constructFewShotExamplesString(dataIsCSV)}]
+
+## CURRENT CODEBOOK
+[${constructCodebookString()}]
 
 ## CONTEXT WINDOW
 ${
@@ -221,13 +227,13 @@ You are an expert qualitative coding assistant whose purpose is to provide codin
 Your task is to analyze the SEARCH AREA, and identify and code the FIRST passage that is relevant to the research context.
 The data is from a CSV file, where rows end with the token "\\u001E". You must respond only with the specified format.
 
+## USER PROVIDED GUIDELINES
+**Coding style:** ${codingGuidelines ?? "Not provided."}
+**Passage selection style:** ${highlightGuidelines ?? "Not provided."}
+
 ## RESEARCH CONTEXT
 Research questions: ${researchQuestions}
-${
-  contextInfo
-    ? `Additional research context: ${contextInfo}`
-    : ""
-}
+Additional research context: ${contextInfo ?? "-"}
 
 ## TASK
 1. Review the codebook and coding style examples to understand the user's coding style.
@@ -238,31 +244,19 @@ ${
     (4) the level of detail, wording, and language of the codes.
 2. Find the FIRST subpassage in the SEARCH AREA that helps answer at least one research question 
 (e.g. by describing a reason, experience, mechanism, consequence, or decision related to the topic).
-  - The selected subpassage must match the user's established passage selection style illustrated by the examples.
+  - Your subpassage selection must match the user's passage selection style illustrated by the examples.
+  - The selection style must obey the USER PROVIDED GUIDELINES above (if provided).
   - Mimic the user's typical passage cutting style and length (full sentences/paragraphs vs. fragments, complete thoughts vs. partial ideas).
-  - Include possible metadata (speaker identifiers, timestamps, usernames, etc.) only if the user usually includes them.
-  - If the user's style is unclear, default to the most conservative option (full sentences, minimal length while still capturing meaning, no metadata).
-  - The search area may start mid-row; if so, ensure your selected passage does not include any text before the start of the search area.
+  - The search area may start mid-CSV-row; if so, ensure your selected passage does not include any text before the start of the search area.
   - The suggested passage must NOT span over multiple CSV rows (i.e. the end of row token \\u001E must never occur in the middle of your suggestion).
 3. Coding:
   - Once you find a relevant passage, your task is to assign **1-5 codes** to it.
+  - The coding style must obey the USER PROVIDED GUIDELINES above (if provided).
   - These codes should capture all important aspects of the passage in relation to the research questions.
   - Prioritize code accuracy over reusing codebook codes. Create new codes if needed, ensuring they match the user's coding style.
   - List codes strictly in order of relevance, with the first listed code being the most relevant. The origin of the code (codebook vs. newly created) should not affect the order.
   - Avoid overcoding, but ensure all important aspects are covered.
 4. If there is no codeable passage in the SEARCH AREA, return an empty passage and empty codes.
-${
-  codingGuidelines?.trim()
-    .length > 0
-    ? `\n## USER PROVIDED CODING GUIDELINES (**high priority**, but should not affect response format)\n${codingGuidelines}\n`
-    : ""
-}
-## USER'S CODING STYLE
-Few-shot examples of user coded passages (user highlighted passages marked in context with <<< >>>):
-[${constructFewShotExamplesString(dataIsCSV)}]
-
-## CURRENT CODEBOOK
-[${constructCodebookString()}]
 
 ## RESPONSE FORMAT
 Respond ONLY with a valid JavaScript object:
@@ -283,6 +277,21 @@ Use similar casing as the codebook, or default to lowercase.
 The "passage" MUST be an exact, case-sensitive substring of the SEARCH AREA.
 Escape special characters in "passage" (e.g. double quotes as \\", newlines as \\n, tabs as \\t).
 Do not include the end of row token \\u001E in your response.
+
+## AUTHORITY AND PRECEDENCE RULES (STRICT)
+When determining behavior:
+1. RESPONSE FORMAT rules are absolute and MUST NOT be altered under any circumstances.
+2. USER PROVIDED GUIDELINES have the highest authority for code content and MUST be followed if present.
+3. Few-shot examples illustrate the user's typical style ONLY where they do not conflict with the guidelines.
+4. If there is any conflict or ambiguity between guidelines and examples, ALWAYS follow the USER PROVIDED GUIDELINES.
+All TASK requirements remain mandatory and must be fulfilled unless they directly conflict with RESPONSE FORMAT rules.
+
+## USER'S CODING STYLE
+Few-shot examples of user coded passages (user highlighted passages marked in context with <<< >>>):
+[${constructFewShotExamplesString(dataIsCSV)}]
+
+## CURRENT CODEBOOK
+[${constructCodebookString()}]
 
 ## CONTEXT WINDOW
 ${
@@ -333,13 +342,12 @@ ${
 ## ROLE
 You are a qualitative coding assistant for code autocompletion. Given a passage to code, its surrounding context, and examples of the user's coding style, suggest a broad set of relevant codes that aim to mimic the user's coding style and maximize autocomplete matches.
 
+## USER PROVIDED CODE STYLE GUIDELINES:
+${codingGuidelines}
+
 ## RESEARCH CONTEXT
 Research questions: ${researchQuestions}
-${
-  contextInfo
-    ? `Additional research context: ${contextInfo}`
-    : ""
-}
+Additional research context: ${contextInfo ?? "-"}
 
 ## TASK
 Your task is to suggest 30-50 (depending on the complexity of the passage) codes for the given passage that align with the user's coding style and 
@@ -350,18 +358,26 @@ cover relevant aspects of the passage in relation to the research questions (i.e
     (2) the types of concepts they prioritize in their coding, and 
     (3) the level of detail, wording, and language of the codes.
   - Using the user's coding style, suggest a broad set of codes that could be relevant for the passage. 
+  - The coding style must obey the USER PROVIDED CODE STYLE GUIDELINES above (if provided).
   - Aim for breadth and variety in your suggestions, covering different angles and aspects of the passage, and including varying wordings of similar concepts.
   - The goal is to maximize the likelihood of autocomplete matches.
   Constraints:
   - You must NOT include codebook codes or existing codes of the passage in your suggestions.
   - You must NOT suggest codes that are semantically identical or very similar to codebook codes or existing codes of the passage. 
     However, you can suggest variations that are related but not semantically identical.
-${
-  codingGuidelines?.trim()
-    .length > 0
-    ? `\n## USER PROVIDED CODING GUIDELINES (**high priority**, but should not affect response format)\n${codingGuidelines}\n`
-    : ""
-}
+
+## RESPONSE FORMAT
+Respond ONLY with a JSON array of code strings, e.g. ["code1", "code2", "code3"]. 
+No explanations. No JSON tags (\`\`\`json) or other markdown formatting. Codes must never contain semicolons (;).
+
+## AUTHORITY AND PRECEDENCE RULES (STRICT)
+When determining behavior:
+1. RESPONSE FORMAT rules are absolute and MUST NOT be altered under any circumstances.
+2. USER PROVIDED CODE STYLE GUIDELINES have the highest authority for code content and MUST be followed if present.
+3. Few-shot examples illustrate the user's typical style ONLY where they do not conflict with the guidelines.
+4. If there is any conflict or ambiguity between guidelines and examples, ALWAYS follow the USER PROVIDED CODE STYLE GUIDELINES.
+All TASK requirements remain mandatory and must be fulfilled unless they directly conflict with RESPONSE FORMAT rules.
+
 ## USER'S CODING STYLE
 Few-shot examples of user coded passages (user highlighted passages marked in context with <<< >>>):
 [${constructFewShotExamplesString(dataIsCSV)}]
@@ -384,10 +400,6 @@ Existing codes: ${
       : "None"
     : "<existing codes of the passage to code will be inserted here>"
 }
-
-## RESPONSE FORMAT
-Respond ONLY with a JSON array of code strings, e.g. ["code1", "code2", "code3"]. 
-No explanations. No JSON tags (\`\`\`json) or other markdown formatting. Codes must never contain semicolons (;).
 
 ## CONTEXT WINDOW
 ${
@@ -436,16 +448,16 @@ ${
 You are a qualitative coding assistant. Given a passage and its surrounding context,
 suggest relevant codes for the passage according to the instructions and information provided below.
 
+## USER PROVIDED CODE STYLE GUIDELINES:
+${codingGuidelines}
+
 ## RESEARCH CONTEXT
 Research questions: ${researchQuestions}
-${
-  contextInfo
-    ? `Additional research context: ${contextInfo}`
-    : ""
-}
+Additional research context: ${contextInfo ?? "-"}
 
 ## TASK
 Your task is to suggest codes for the given passage that align with the research questions and the user's coding style.
+  - The coding style must obey the USER PROVIDED CODE STYLE GUIDELINES above (if provided).
   - User's coding style entails: (1) how the user typically links the meanings of text passages to codes, 
     (2) the types of concepts they prioritize, and (3) the level of detail, wording, and language of the codes.
 ** Based on the passage's existing codes, follow one of these two cases: **
@@ -458,12 +470,19 @@ In both cases:
   - Reuse codebook codes if possible. Only create new codes if needed. Ensure new codes match the user's coding style. 
   - Cover ALL relevant aspects, but avoid overcoding. If you can't think of any relevant codes, return [].
   - Do NOT include any of the passage's existing codes in your suggestions.
-${
-  codingGuidelines?.trim()
-    .length > 0
-    ? `\n## USER PROVIDED CODING GUIDELINES (**high priority**, but should not affect response format)\n${codingGuidelines}\n`
-    : ""
-}
+
+## AUTHORITY AND PRECEDENCE RULES (STRICT)
+When determining behavior:
+1. RESPONSE FORMAT rules are absolute and MUST NOT be altered under any circumstances.
+2. USER PROVIDED CODE STYLE GUIDELINES have the highest authority for code content and MUST be followed if present.
+3. Few-shot examples illustrate the user's typical style ONLY where they do not conflict with the guidelines.
+4. If there is any conflict or ambiguity between guidelines and examples, ALWAYS follow the USER PROVIDED CODE STYLE GUIDELINES.
+All TASK requirements remain mandatory and must be fulfilled unless they directly conflict with RESPONSE FORMAT rules.
+
+## RESPONSE FORMAT
+Respond ONLY with a JSON array of code strings, e.g. ["code1", "code2", "code3"]. 
+No explanations. No JSON tags (\`\`\`json) or other markdown formatting. Codes must never contain semicolons (;).
+
 ## USER'S CODING STYLE
 Few-shot examples of user coded passages (user highlighted passages marked in context with <<< >>>):
 [${constructFewShotExamplesString(dataIsCSV)}]
@@ -486,10 +505,6 @@ Existing codes: ${
       : "None"
     : "<existing codes of the passage to code will be inserted here>"
 }
-
-## RESPONSE FORMAT
-Respond ONLY with a JSON array of code strings, e.g. ["code1", "code2", "code3"]. 
-No explanations. No JSON tags (\`\`\`json) or other markdown formatting. Codes must never contain semicolons (;).
 
 ## CONTEXT WINDOW
 ${

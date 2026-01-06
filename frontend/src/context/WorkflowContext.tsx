@@ -73,6 +73,9 @@ export interface WorkflowContextType {
   codingGuidelines: string;
   setCodingGuidelines: Setter<string>;
 
+  highlightGuidelines: string;
+  setHighlightGuidelines: Setter<string>;
+
   uploadedFile: File | null;
   setUploadedFile: Setter<File | null>;
 
@@ -149,6 +152,7 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
   const [researchQuestions, setResearchQuestions] = useState<string>("");
   const [contextInfo, setContextInfo] = useState<string>("");
   const [codingGuidelines, setCodingGuidelines] = useState<string>(""); // User-provided coding guidelines
+  const [highlightGuidelines, setHighlightGuidelines] = useState<string>(""); // User-provided highlight selection guidelines
 
   // Data upload states
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -249,6 +253,8 @@ export function WorkflowProvider({ children }: { children: React.ReactNode }) {
     setContextInfo,
     codingGuidelines,
     setCodingGuidelines,
+    highlightGuidelines,
+    setHighlightGuidelines,
     uploadedFile,
     setUploadedFile,
     rawData,
