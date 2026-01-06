@@ -39,9 +39,8 @@ const PromptReviewCardContent = () => {
       <div className="flex flex-col gap-5">
         <p className="max-w-[90%]">
           <b>NOTE:</b> This section is for review purposes only to improve transparency.
-          Unfortunately the prompts can not be directly edited here. However, in the next
-          step, you will be able to add custom coding guidelines that are included in all
-          prompts between the TASK and USER'S CODING STYLE sections.
+          Unfortunately the prompts can not be directly edited here. However, you can use
+          this feature to see how your actions affect the prompts.
         </p>
         <h2 className="pt-5 font-semibold text-xl">Suggestion Types</h2>
         <p>
@@ -58,17 +57,16 @@ const PromptReviewCardContent = () => {
             beginning of that uncoded section.
           </li>
           <li>
-            <b>Code suggestions:</b> These suggestions appear in the UI when a code is
-            being typed for a passage, but the input field is still empty. A code
-            suggestions fetch is triggered when a code input in the UI gets activated.
+            <b>Code suggestions:</b> These suggestions appear in the UI when a code input
+            is active, but a code has not yet been typed in. A code suggestions fetch is
+            triggered when a code input gets activated.
           </li>
           <li>
             <b>Autocomplete suggestions:</b> These suggestions provide a broad set of
             possible codes for the passage that is currently being coded (i.e. has an
-            active code input). These suggestions can contain multiple phrasings of
-            conceptually similar ideas to maximize autocomplete matches during code
-            editing. Autocomplete suggestions are triggered at the same time as code
-            suggestions.
+            active code input). When typing in a code, the system tries to match with
+            these suggestions. Autocomplete suggestions are triggered at the same time as
+            code suggestions.
           </li>
         </ol>
         <h2 className="pt-5 font-semibold text-xl">Utilized OpenAI Models</h2>
