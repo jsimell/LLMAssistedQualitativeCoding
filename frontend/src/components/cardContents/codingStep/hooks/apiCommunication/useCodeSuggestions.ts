@@ -1,12 +1,7 @@
 import { useCallback, useContext } from "react";
-import {
-  Passage,
-  WorkflowContext,
-} from "../../../../../context/WorkflowContext";
+import { Passage, WorkflowContext } from "../../../../../context/WorkflowContext";
 import { callOpenAIStateless } from "../../../../../services/openai";
-import {
-  getPassageWithSurroundingContext,
-} from "../../utils/passageUtils";
+import { getPassageWithSurroundingContext } from "../../utils/passageUtils";
 import { usePrompts } from "./usePrompts";
 
 const OPENAI_MODEL = "gpt-4.1-mini";
@@ -16,9 +11,7 @@ const TRAILING_CONTEXT_RATIO = 1 - PRECEDING_CONTEXT_RATIO;
 export const useCodeSuggestions = () => {
   const context = useContext(WorkflowContext);
   if (!context) {
-    throw new Error(
-      "useCodeSuggestions must be used within a WorkflowProvider"
-    );
+    throw new Error("useCodeSuggestions must be used within a WorkflowProvider");
   }
   const {
     researchQuestions,
@@ -31,7 +24,8 @@ export const useCodeSuggestions = () => {
     codeSuggestionContextWindowSize,
   } = context;
 
-  const { generateCodeSuggestionsPrompt, generateAutocompleteSuggestionsPrompt } = usePrompts();
+  const { generateCodeSuggestionsPrompt, generateAutocompleteSuggestionPrompt } =
+    usePrompts();
 
   const dataIsCSV = uploadedFile?.type === "text/csv";
 
@@ -49,7 +43,8 @@ export const useCodeSuggestions = () => {
    */
   const getCodeSuggestions = useCallback(
     async (passage: Passage) => {
-      const { precedingContext, passageText, trailingContext } = getPassageWithSurroundingContext(
+      const { precedingContext, passageText, trailingContext } =
+        getPassageWithSurroundingContext(
           passage,
           passages,
           precedingContextSize,
@@ -59,16 +54,12 @@ export const useCodeSuggestions = () => {
 
       const systemPrompt = generateCodeSuggestionsPrompt(
         dataIsCSV,
-        passage,
         precedingContext,
-        trailingContext
+        trailingContext,
+        passage
       );
 
-      let response = await callOpenAIStateless(
-        apiKey,
-        systemPrompt,
-        OPENAI_MODEL
-      );
+      let response = await callOpenAIStateless(apiKey, systemPrompt, OPENAI_MODEL);
       let parsedResponse: string[];
 
       // Some simple validation of the response
@@ -109,56 +100,62 @@ export const useCodeSuggestions = () => {
    * @param passageId - ID of the passage for which to get suggestions
    * @returns array of suggestions as strings
    */
-  const getAutocompleteSuggestions = useCallback(
-    async (passage: Passage) => {
-      const { precedingContext, passageText, trailingContext } = getPassageWithSurroundingContext(
+  const getAutocompleteSuggestion = useCallback(
+    async (passage: Passage, existingCodes: string[], currentUserInput: string): Promise<string> => {
+      const { precedingContext, passageText, trailingContext } =
+        getPassageWithSurroundingContext(
           passage,
           passages,
           precedingContextSize,
           trailingContextSize,
           dataIsCSV
-        )
+        );
 
-      const systemPrompt = generateAutocompleteSuggestionsPrompt(
+      const systemPrompt = generateAutocompleteSuggestionPrompt(
         dataIsCSV,
-        passage,
+        currentUserInput,
         precedingContext,
-        trailingContext
+        trailingContext,
+        passage,
+        existingCodes
       );
 
-      let response = await callOpenAIStateless(
-        apiKey,
-        systemPrompt,
-        OPENAI_MODEL
-      );
-      let parsedResponse;
-
-      // Some simple validation of the response, and a single retry if needed
-      try {
-        parsedResponse = JSON.parse(response.output_text.trim());
-        if (!Array.isArray(parsedResponse)) throw new Error("Not an array");
-      } catch {
-        const retryPrompt =
-          systemPrompt +
-          "\n\n## ADDITIONAL NOTE:\nIt is absolutely critical that you respond ONLY with a JSON array as specified. Nothing else. No explanations.";
-        response = await callOpenAIStateless(apiKey, retryPrompt, OPENAI_MODEL);
-        try {
-          parsedResponse = JSON.parse(response.output_text.trim());
-          if (!Array.isArray(parsedResponse)) parsedResponse = [];
-        } catch {
-          console.warn(
-            "Failed to parse code autocomplete suggestions response:",
-            response.output_text
-          );
-          parsedResponse = [];
-        }
+      const responseIsValid = (responseText: string) => {
+        return (
+          responseText.trim().length > 0 &&
+          !responseText.includes(";")
+        );
       }
 
-      // Filter out any codes that contain semicolons, because they would break the code blob input
-      parsedResponse = parsedResponse.filter(
-        (code) => code.includes(";") === false
-      );
-      return parsedResponse;
+      // Fetch a response, validate, and try once again if invalid
+      let responseText: string | undefined;
+      try {
+        let response = await callOpenAIStateless(apiKey, systemPrompt, OPENAI_MODEL);
+        responseText = response.output_text.trim();
+        if (!responseIsValid(responseText)) {
+          console.warn(
+            "Invalid autocomplete suggestion response:",
+            response.output_text
+          );
+          const retryPrompt =
+          systemPrompt +
+          "\n\n## ADDITIONAL NOTE:\nPrevious response failed validation. It is absolutely critical that you respond ONLY with a single code string as specified. Nothing else. No explanations.";
+          response = await callOpenAIStateless(apiKey, retryPrompt, OPENAI_MODEL);
+          responseText = response.output_text.trim();
+          if (!responseIsValid(responseText)) {
+            console.warn(
+              "Invalid autocomplete suggestion response:",
+              response.output_text
+            );
+            responseText = "";
+          }
+        }
+      } catch (error) {
+          console.warn("Autocomplete suggestion fetch failed with error:", error);
+          responseText = "";
+      }
+
+      return responseText;
     },
     [
       apiKey,
@@ -173,6 +170,6 @@ export const useCodeSuggestions = () => {
 
   return {
     getCodeSuggestions,
-    getAutocompleteSuggestions,
+    getAutocompleteSuggestion,
   };
 };

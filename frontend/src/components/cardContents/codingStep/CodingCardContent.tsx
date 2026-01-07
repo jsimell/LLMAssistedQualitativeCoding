@@ -32,6 +32,7 @@ const CodingCardContent = () => {
     setVisitedSteps,
     showCodingInstructionsOverlay,
     setShowCodingInstructionsOverlay,
+    researchQuestions,
   } = context;
 
   // Custom hooks
@@ -411,7 +412,7 @@ const CodingCardContent = () => {
                   parentPassage={p}
                   codeId={codeId}
                   codeSuggestions={p.codeSuggestions}
-                  autocompleteSuggestions={p.autocompleteSuggestions}
+                  autocompleteSuggestion={p.autocompleteSuggestion}
                   activeCodeId={activeCodeId}
                   setActiveCodeId={setActiveCodeId}
                   setPendingHighlightFetches={setPendingHighlightFetches}
@@ -450,8 +451,11 @@ const CodingCardContent = () => {
           <p>
             <b>File:</b> <i>{uploadedFile?.name}</i>
           </p>
+          <p>
+            <b>RQs:</b> {researchQuestions}
+          </p>
           {uploadedFile?.type === "text/csv" && (
-            <div className="flex items-center gap-2 pt-2 min-w-0">
+            <div className="flex items-center gap-2 pt-5 min-w-0">
               <span className="whitespace-nowrap pr-2">Displayed column:</span>
               <select
                 name="displayedColumn"

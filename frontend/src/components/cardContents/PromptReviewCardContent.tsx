@@ -16,17 +16,27 @@ const PromptReviewCardContent = () => {
   const {
     generateHighlightSuggestionsPrompt,
     generateCodeSuggestionsPrompt,
-    generateAutocompleteSuggestionsPrompt,
+    generateAutocompleteSuggestionPrompt,
   } = usePrompts();
 
   const highlightPrompt = generateHighlightSuggestionsPrompt(
-    context.uploadedFile?.type === "text/csv"
+    context.uploadedFile?.type === "text/csv",
+    "<preceding text will be inserted here>",
+    "<highlight search area will be inserted here>"
   );
   const codePrompt = generateCodeSuggestionsPrompt(
-    context.uploadedFile?.type === "text/csv"
+    context.uploadedFile?.type === "text/csv",
+    "<the target passage will be inserted here>",
+    "<target passage with context will be inserted here>",
+    undefined
   );
-  const autocompletePrompt = generateAutocompleteSuggestionsPrompt(
-    context.uploadedFile?.type === "text/csv"
+  const autocompletePrompt = generateAutocompleteSuggestionPrompt(
+    context.uploadedFile?.type === "text/csv",
+    "<the current user input will be inserted here>",
+    "PRECEDING TEXT HERE",
+    "TRAILING TEXT HERE",
+    undefined,
+    undefined
   );
 
   // Proceed should always be available at this step
@@ -47,7 +57,7 @@ const PromptReviewCardContent = () => {
           The app uses three kinds of LLM suggestions. Each type has its own prompt and is
           triggered at a different moment in the workflow.
         </p>
-        <ol className="flex max-w-[80%] flex-col gap-4 list-decimal list-inside marker:font-bold">
+        <ol className="flex max-w-[70%] flex-col gap-4 list-decimal list-inside marker:font-bold">
           <li>
             <b>Highlight suggestions:</b> These suggestions propose the next passage to
             highlight, together with an initial coding for the passage. A fetch for
@@ -57,16 +67,13 @@ const PromptReviewCardContent = () => {
             beginning of that uncoded section.
           </li>
           <li>
-            <b>Code suggestions:</b> These suggestions appear in the UI when a code input
-            is active, but a code has not yet been typed in. A code suggestions fetch is
-            triggered when a code input gets activated.
+            <b>Code suggestions:</b> These are the initial code suggestions that appear on
+            the active code input when nothing has been typed in yet. A code suggestions
+            fetch is triggered when a code input gets activated.
           </li>
           <li>
-            <b>Autocomplete suggestions:</b> These suggestions provide a broad set of
-            possible codes for the passage that is currently being coded (i.e. has an
-            active code input). When typing in a code, the system tries to match with
-            these suggestions. Autocomplete suggestions are triggered at the same time as
-            code suggestions.
+            <b>Autocomplete suggestions:</b> When you get stuck while typing in a new code, 
+            an autocomplete suggestions fetch is triggered to help you complete your code.
           </li>
         </ol>
         <h2 className="pt-5 font-semibold text-xl">Utilized OpenAI Models</h2>

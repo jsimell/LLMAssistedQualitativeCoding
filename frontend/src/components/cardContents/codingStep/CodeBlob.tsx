@@ -12,7 +12,7 @@ interface CodeBlobProps {
   codeId: CodeId;
   parentPassage: Passage;
   codeSuggestions: string[];
-  autocompleteSuggestions: string[];
+  autocompleteSuggestion: string | null;
   activeCodeId: CodeId | null;
   setActiveCodeId: React.Dispatch<React.SetStateAction<CodeId | null>>;
   setPendingHighlightFetches: React.Dispatch<React.SetStateAction<Array<PassageId>>>;
@@ -25,8 +25,12 @@ interface CodeBlobProps {
     editAllInstancesOfCode: (oldValue: string, newValue: string) => void;
   };
   suggestionsManager: {
-    updateSuggestionsForPassage: (id: `passage-${number}`) => Promise<void>;
-    updateAutocompleteSuggestionsForPassage: (id: `passage-${number}`) => Promise<void>;
+    updateAutocompleteSuggestionForPassage: (
+      id: `passage-${number}`,
+      existingCodes: string[],
+      currentUserInput: string
+    ) => Promise<void>;
+    updateCodeSuggestionsForPassage: (id: `passage-${number}`) => Promise<void>;
   };
 }
 
@@ -34,7 +38,7 @@ const CodeBlob = ({
   codeId,
   parentPassage,
   codeSuggestions,
-  autocompleteSuggestions,
+  autocompleteSuggestion,
   activeCodeId,
   setActiveCodeId,
   setPendingHighlightFetches,
@@ -44,9 +48,9 @@ const CodeBlob = ({
   codeManager,
   suggestionsManager,
 }: CodeBlobProps) => {
-
   // Extract functions from the custom hooks passed via props
-  const { updateSuggestionsForPassage, updateAutocompleteSuggestionsForPassage } = suggestionsManager;
+  const { updateAutocompleteSuggestionForPassage, updateCodeSuggestionsForPassage } =
+    suggestionsManager;
   const { deleteCode, updateCode } = codeManager;
 
   // CONTEXT
@@ -58,7 +62,7 @@ const CodeBlob = ({
   const codeObject = codes.find((c) => c.id === codeId);
   if (!codeObject) return null;
   const [inputValue, setInputValue] = useState(codeObject.code);
-    
+
   // REFS
   const changeIndexRef = useRef<number>(inputValue.length); // Track index where last change occurred inside contentEditable
   const inputRef = useRef<HTMLSpanElement | null>(null);
@@ -82,15 +86,20 @@ const CodeBlob = ({
       if (aiSuggestionsEnabled) {
         // Update suggestions for the parent passage
         const fetchSuggestions = async () => {
-          // On first render, there may already be initial code suggestions (if created from highlight suggestion)
-          // In that case, only fetch autocomplete suggestions
-          if (parentPassage.autocompleteSuggestions.length === 0 && parentPassage.codeSuggestions.length > 0) {
-            // Only fetch autocomplete suggestions on first render if initial code suggestions exist
-            await updateAutocompleteSuggestionsForPassage(parentPassage.id);
+          // If the passage has only one empty code, but has code suggestions, the passage was created through a highlight suggestion
+          // => in this case, skip the initial code suggestions fetch
+          const codesOfPassage = codes
+            .filter((c) => c.passageId === parentPassage.id)
+            .map((c) => c.code);
+          if (
+            parentPassage.codeIds.length === 1 &&
+            codesOfPassage[0] === "" &&
+            parentPassage.codeSuggestions.length > 0
+          ) {
             return;
           } else {
             // On subsequent renders, fetch both code suggestions and autocomplete suggestions
-            await updateSuggestionsForPassage(parentPassage.id);
+            await updateCodeSuggestionsForPassage(parentPassage.id);
           }
         };
 
@@ -115,17 +124,19 @@ const CodeBlob = ({
       return;
     }
 
-    const afterLastSemicolon = inputValue
-      .slice(inputValue.lastIndexOf(";") + 1)
-      .trim();
+    const afterLastSemicolonTrimmed = getAfterLastSemicolon(inputValue).trim();
 
-    if (afterLastSemicolon === "") {
+    if (afterLastSemicolonTrimmed === "") {
       // Nothing typed after last semicolon, or nothing typed at all
       // Find the first suggestion that hasn't been typed yet and isn't already an existing code of the passage
       const inputValueLower = inputValue.toLowerCase();
-      const existingCodesSet = new Set(codes.filter(c => c.passageId === parentPassage.id).map(c => c.code.toLowerCase()));
+      const existingCodesSet = new Set(
+        codes
+          .filter((c) => c.passageId === parentPassage.id)
+          .map((c) => c.code.toLowerCase())
+      );
 
-      const suggestion = codeSuggestions.find(s => {
+      const suggestion = codeSuggestions.find((s) => {
         const suggestionLower = s.toLowerCase();
         const isNotInputted = !inputValueLower.includes(suggestionLower);
         const isNotAnExistingCode = !existingCodesSet.has(suggestionLower);
@@ -136,41 +147,102 @@ const CodeBlob = ({
       } else {
         inputValue === "" ? setGhostText("Type code...") : setGhostText("");
       }
-    } else { // There is some text after the last semicolon, or the user has typed part of the first code
+    } else {
+      // There is some text after the last semicolon, or the user has typed part of the first code
       // First try to match with existing codebook codes
-      let matchingSuggestion = null;
-      if (!matchingSuggestion) {
-        matchingSuggestion = Array.from(codebook).find(
-          (code) =>
-            code
-              .startsWith(afterLastSemicolon) &&
-            !inputValue.toLowerCase().includes(code.toLowerCase())
+      let matchingSuggestion = Array.from(codebook).find(
+        (code) =>
+          code.startsWith(afterLastSemicolonTrimmed) &&
+          !inputValue.trim().includes(code.trim())
+      );
+      // If aiSuggestions are enabled, replace a possible codebook match with codeSuggestions or autocompleteSuggestion match if there is one
+      if (aiSuggestionsEnabled) {
+        // Replace matchingSuggestion if a match is found in codeSuggestions or autocompleteSuggestion
+        // Autocomplete suggestion has priority over codeSuggestions => place it first
+        const suggestionsArray = Array.from(
+          new Set([
+            ...(autocompleteSuggestion && autocompleteSuggestion.trim().length > 0 ? [autocompleteSuggestion] : []),
+            ...codeSuggestions
+          ])
         );
-      }
-      // If aiSuggestions are enabled, replace matchingSuggestion with codeSuggestions/autocompleteSuggestions match (if any)
-      if (aiSuggestionsEnabled) {      
-        // Replace matchingSuggestion if a match is found in codeSuggestions or autocompleteSuggestions
-        const codeAndAutocompleteSuggestions = Array.from(
-          new Set([...codeSuggestions, ...autocompleteSuggestions])
-        );
-        matchingSuggestion = codeAndAutocompleteSuggestions.find(
+        const suggestionMatch = suggestionsArray.find(
           (suggestion) =>
-            suggestion
-              .toLowerCase()
-              .startsWith(afterLastSemicolon.toLowerCase()) &&
-            !inputValue.toLowerCase().includes(suggestion.toLowerCase())
+            suggestion.toLowerCase().startsWith(afterLastSemicolonTrimmed.toLowerCase()) &&
+            !inputValue.toLowerCase().includes(suggestion.toLowerCase().trim())
         );
+        if (suggestionMatch) {
+          matchingSuggestion = suggestionMatch;
+        }
       }
 
       // Set ghost text based on the matching suggestion
       const inputLastCharIsSpace = inputValue.slice(-1) === " ";
       setGhostText(
-        inputLastCharIsSpace 
-          ? matchingSuggestion?.slice(afterLastSemicolon.trim().length).trim() || ""
-          : matchingSuggestion?.slice(afterLastSemicolon.trim().length) || ""
+        inputLastCharIsSpace
+          ? matchingSuggestion?.slice(afterLastSemicolonTrimmed.length).trim() || ""
+          : matchingSuggestion?.slice(afterLastSemicolonTrimmed.length) || ""
       );
     }
-  }, [activeCodeId, inputValue, codeSuggestions, autocompleteSuggestions, aiSuggestionsEnabled]);
+  }, [
+    activeCodeId,
+    inputValue,
+    codeSuggestions,
+    autocompleteSuggestion,
+    aiSuggestionsEnabled,
+  ]);
+
+  // Fetch a new autocomplete suggestion after user stops typing for 1.5s
+  useEffect(() => {
+    if (!aiSuggestionsEnabled) return;
+    if (activeCodeId !== codeId) return;
+
+    const afterLastSemicolon = getAfterLastSemicolon(inputValue);
+    // If nothing typed after last semicolon, there is nothing to complete, so do not fetch autocomplete suggestion
+    if (afterLastSemicolon.trim().length === 0) return;
+    // If the current content of the input field matches an existing code exactly, this means user has reactivated
+    // a previously entered code and has not typed anything new yet -> do not fetch autocomplete suggestion
+    if (
+      codes.some((c) => c.passageId === parentPassage.id && c.code === inputValue.trim())
+    ) {
+      return;
+    }
+    // If there is already a visible ghost text, meaning that there is a
+    // code suggestion or codebook match, or input is empty with "Type code..." shown,
+    // do NOT fetch autocompleteSuggestion.
+    if (ghostText) return;
+
+    // Codes that are not in this code blob, but are assigned to the parent passage
+    const enteredCodes = codes
+      .filter((c) => c.passageId === parentPassage.id && c.id !== codeId)
+      .map((c) => c.code);
+    // Codes before the last semicolon
+    const semicolonIndex = inputValue.lastIndexOf(";");
+    const precedingCodes =
+      semicolonIndex === -1
+        ? []
+        : inputValue
+            .slice(0, semicolonIndex)
+            .split(";")
+            .map((c) => c.trim())
+            .filter((c) => c.length > 0);
+    // Combine and deduplicate
+    const existingCodes = Array.from(new Set([...enteredCodes, ...precedingCodes]));
+
+    // Code being typed (after last semicolon)
+    const currentUserInput = afterLastSemicolon.trim();
+
+    const timeoutId = window.setTimeout(() => {
+      updateAutocompleteSuggestionForPassage(
+        parentPassage.id,
+        existingCodes,
+        currentUserInput
+      );
+    }, 1500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [inputValue, activeCodeId, codeId, codes, aiSuggestionsEnabled, parentPassage.id]);
 
   // Ensure correct cursor position after input value changes
   useEffect(() => {
@@ -192,25 +264,34 @@ const CodeBlob = ({
     }
   }, [activeCodeId, codeId]);
 
-  /** 
-   * 
+  /**
+   * A helper function to get the substring after the last semicolon in a string,
+   * or the entire string if no semicolon is present. Not trimmed.
+   * @param value the string to extract from
+   * @returns the substring after the last semicolon, trimmed of whitespace
+   */
+  const getAfterLastSemicolon = (value: string) =>
+    value.slice(value.lastIndexOf(";") + 1);
+
+  /**
+   * Handles input changes in the contentEditable element.
+   * @param e - the input event that triggered the function call
    */
   const handleInputChange = (e: React.FormEvent<HTMLSpanElement>) => {
     const selection = window.getSelection();
     const range = selection?.getRangeAt(0);
-    
+
     if (range) {
       // Get cursor position relative to the contentEditable element
       const preCaretRange = range.cloneRange();
       preCaretRange.selectNodeContents(e.currentTarget);
       preCaretRange.setEnd(range.endContainer, range.endOffset);
       changeIndexRef.current = preCaretRange.toString().length;
-      
+
       // Update input value state
       setInputValue(e.currentTarget.textContent || "");
     }
-  }
-
+  };
 
   /**
    * Handles a keyboard event that occurs during code editing.
@@ -239,24 +320,27 @@ const CodeBlob = ({
       }
     }
 
-    // ESCAPE: decline AI suggestion (if any) and keep editing, OR finalize editing if no suggestion
+    // ESCAPE: decline ghost text suggestion (if any) and keep editing, OR finalize editing if no suggestion
     if (e.key === "Escape") {
       if (ghostText && ghostText !== "Type code...") {
         e.preventDefault();
-        // Remove the suggested text from the passage's code and autocomplete suggestions
-        const passage = passages.find(p => p.id === parentPassage.id);
+        const suggestion = (getAfterLastSemicolon(inputValue) + ghostText).trim();
+        // Remove the suggested text from the passage's code suggestions, if it exists there, and clear autocomplete suggestion
+        const passage = passages.find((p) => p.id === parentPassage.id);
         if (!passage) return;
-        setPassages(prevPassages => prevPassages.map(p => {
-          if (p.id === passage.id && p.isHighlighted) {
-            return {
-              ...p,
-              codeSuggestions: p.codeSuggestions.filter(s => s !== ghostText),
-              autocompleteSuggestions: p.autocompleteSuggestions.filter(s => s !== ghostText),
-            };
-          }
-          return p;
-        }));
-        // And hide ghost text until user changes input again
+        setPassages((prevPassages) =>
+          prevPassages.map((p) => {
+            if (p.id === passage.id && p.isHighlighted) {
+              return {
+                ...p,
+                codeSuggestions: p.codeSuggestions.filter((s) => s !== suggestion),
+                autocompleteSuggestion: "",
+              };
+            }
+            return p;
+          })
+        );
+        setGhostText(""); // Clear ghost text
         return;
       } else {
         e.preventDefault();
@@ -274,50 +358,48 @@ const CodeBlob = ({
   };
 
   /** Handles the deletion of a code, which may trigger highlight suggestion fetches.
-   * 
+   *
    * @param codeId - the ID of the code to be deleted
    */
   const handleDeletion = () => {
-    const queueForSuggestionFetch = (passages.find(p => p.id === parentPassage.id)?.codeIds.length ?? 0) <= 1;
+    const queueForSuggestionFetch =
+      (passages.find((p) => p.id === parentPassage.id)?.codeIds.length ?? 0) <= 1;
     const affectedPassageId = deleteCode(codeId);
     if (affectedPassageId && queueForSuggestionFetch) {
-      setPendingHighlightFetches(prev => [...prev, affectedPassageId]);
+      setPendingHighlightFetches((prev) => [...prev, affectedPassageId]);
     }
   };
-
 
   /** Updates the code into the global state. */
   const handleCodeEnter = async () => {
     if (activeCodeId === null) return; // For safety: should not happen
     if (preventCodeBlobDeactivationRef.current || clickedExampleBlobRef.current) {
-      // If code enter was caused by user clicking the suggestions toggle or a few-shot example checkbox, 
+      // If code enter was caused by user clicking the suggestions toggle or a few-shot example checkbox,
       // refocus the code blob instead of updating the code
       inputRef.current?.focus();
       return;
     }
     preventCodeBlobDeactivationRef.current = false;
 
-    const codeObject: Code | undefined = codes.find(
-      (c) => c.id === activeCodeId
-    );
+    const codeObject: Code | undefined = codes.find((c) => c.id === activeCodeId);
     if (!codeObject) return;
 
     const cleanedInputValue = inputValue.trim().replace(/;+$/, ""); // Remove trailing semicolons
-    
+
     if (cleanedInputValue === "") {
       // If user entered an empty code, delete it
       handleDeletion();
       return;
     }
-    
+
     setInputValue(cleanedInputValue);
-    
+
     // Only update codes if the value actually changed
     if (cleanedInputValue !== codeObject.code) {
       const affectedPassageId = updateCode(activeCodeId, cleanedInputValue);
       setTimeout(() => {
         if (affectedPassageId) {
-          setPendingHighlightFetches(prev => [...prev, affectedPassageId]);
+          setPendingHighlightFetches((prev) => [...prev, affectedPassageId]);
         }
       }, 0);
     }
@@ -327,21 +409,19 @@ const CodeBlob = ({
     return;
   };
 
-
   /**
-   * Moves the input cursor to the end of the contentEditable element 
-  */
+   * Moves the input cursor to the end of the contentEditable element
+   */
   const moveInputCursorToEnd = () => {
     if (!inputRef.current) return;
     const range = document.createRange();
-        const selection = window.getSelection();
-        range.selectNodeContents(inputRef.current);
-        range.collapse(false); // false = collapse to end
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-        changeIndexRef.current = inputValue.length; // Update the change index ref
+    const selection = window.getSelection();
+    range.selectNodeContents(inputRef.current);
+    range.collapse(false); // false = collapse to end
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    changeIndexRef.current = inputValue.length; // Update the change index ref
   };
-
 
   return (
     <>
@@ -355,7 +435,7 @@ const CodeBlob = ({
               : ""
           } 
         `}
-        onClick={(e) => setActiveCodeId(codeId)}
+        onClick={() => setActiveCodeId(codeId)}
       >
         <div className="inline whitespace-pre-wrap">
           <span
@@ -371,7 +451,7 @@ const CodeBlob = ({
             {inputValue}
           </span>
           {activeCodeId === codeId && (
-            <span 
+            <span
               onMouseDown={(e) => {
                 e.preventDefault(); // Prevent blur event on contentEditable element
               }}
@@ -401,7 +481,11 @@ const CodeBlob = ({
           <XMarkIcon className="size-5" />
         </button>
       </span>
-      {isLastCodeOfPassage && parentPassage.text.endsWith("\n") && (<br />) /* Preserve trailing newlines after code blobs */}
+      {
+        isLastCodeOfPassage && parentPassage.text.endsWith("\n") && (
+          <br />
+        ) /* Preserve trailing newlines after code blobs */
+      }
     </>
   );
 };

@@ -74,16 +74,15 @@ const ResearchContextCardContent = () => {
         }}
         className="flex flex-col gap-2 pb-4 w-full"
       >
-        <div>
+        <div className="flex flex-col">
           <label htmlFor="RQs" className="text-nowrap">
             Research question(s): <sup className="text-red-600 text-sm ">*</sup>
           </label>
-          <input
+          <textarea
             id="RQs"
             value={currentRQs}
             onChange={(e) => setCurrentRQs(e.target.value)}
-            type="text"
-            className="border-1 border-outline rounded-sm p-1 w-full h-fit accent-[#006851]"
+            className="border-1 border-outline rounded-sm p-1 accent-[#006851]"
             required
           />
         </div>

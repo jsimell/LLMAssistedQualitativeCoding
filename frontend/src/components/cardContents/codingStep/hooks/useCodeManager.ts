@@ -97,6 +97,7 @@ export const useCodeManager = ({ setActiveCodeId }: UseCodeManagerProps) => {
               ...p,
               isHighlighted: true,
               codeIds: [...p.codeIds, ...newCodeIds],
+              autocompleteSuggestion: "",
               nextHighlightSuggestion: null,
             }
           : p;
@@ -141,6 +142,7 @@ export const useCodeManager = ({ setActiveCodeId }: UseCodeManagerProps) => {
           ...affectedPassage,
           isHighlighted: true,
           codeIds: filteredCodeIds,
+          autocompleteSuggestion: "",
           nextHighlightSuggestion: null,
         };
         fetchHighlightSuggestion = false; // If passage still has codes, no need to fetch highlight suggestion later
@@ -156,7 +158,7 @@ export const useCodeManager = ({ setActiveCodeId }: UseCodeManagerProps) => {
         isHighlighted: false,
         codeIds: [],
         codeSuggestions: [],
-        autocompleteSuggestions: [],
+        autocompleteSuggestion: null,
         nextHighlightSuggestion: null,
       };
       const prevPassage = prev.find(
@@ -194,7 +196,7 @@ export const useCodeManager = ({ setActiveCodeId }: UseCodeManagerProps) => {
         isHighlighted: false,
         codeIds: [],
         codeSuggestions: [],
-        autocompleteSuggestions: [],
+        autocompleteSuggestion: null,
         nextHighlightSuggestion: null,
       };
 

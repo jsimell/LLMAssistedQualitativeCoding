@@ -15,7 +15,7 @@ interface UnhighlightedPassage extends BasePassage {
   isHighlighted: false;
   codeIds: []; // No codes for unhighlighted passages
   codeSuggestions: []; // No code suggestions for unhighlighted passages
-  autocompleteSuggestions: []; // No autocomplete suggestions for unhighlighted passages
+  autocompleteSuggestion: null; // No autocomplete suggestion for unhighlighted passages
   nextHighlightSuggestion: HighlightSuggestion | null;
 }
 
@@ -24,7 +24,7 @@ interface HighlightedPassage extends BasePassage {
   isHighlighted: true;
   codeIds: CodeId[];
   codeSuggestions: string[];
-  autocompleteSuggestions: string[];
+  autocompleteSuggestion: string;
   nextHighlightSuggestion: null;
 }
 

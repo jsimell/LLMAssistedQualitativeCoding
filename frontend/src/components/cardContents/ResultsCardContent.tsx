@@ -178,7 +178,7 @@ const ResultsCardContent = () => {
           </p>
         </div>
         <div className="flex flex-col gap-4 items-center max-w-[400px]">
-          <p>Download codebook and code counts as a CSV file:</p>
+          <p>Download the codebook and code counts as a CSV file:</p>
           <Button
             onClick={handleCodebookDownload}
             label={"Download codebook"}

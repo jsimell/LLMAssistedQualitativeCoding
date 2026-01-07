@@ -19,7 +19,7 @@ export const useSuggestionsManager = () => {
 
   const { passages, setPassages, aiSuggestionsEnabled } = context;
 
-  const { getCodeSuggestions, getAutocompleteSuggestions } = useCodeSuggestions();
+  const { getCodeSuggestions, getAutocompleteSuggestion } = useCodeSuggestions();
   const { getNextHighlightSuggestion } = useHighlightSuggestions();
 
   // STATE
@@ -126,8 +126,10 @@ export const useSuggestionsManager = () => {
   /** Refreshes autocomplete suggestions for the given passage.
    * @param id The ID of the passage for which to refresh autocomplete suggestions.
    */
-  const refreshAutocompleteSuggestions = async (
+  const refreshAutocompleteSuggestion = async (
     id: PassageId,
+    existingCodes: string[],
+    currentUserInput: string,
     callTimestamp: number
   ) => {
     if (!aiSuggestionsEnabled) return;
@@ -135,7 +137,7 @@ export const useSuggestionsManager = () => {
     if (!passage || !passage.isHighlighted) return;
 
     try {
-      const suggestions = await getAutocompleteSuggestions(passage);
+      const suggestion: string = await getAutocompleteSuggestion(passage, existingCodes, currentUserInput);
 
       // Only update if this is still the latest call
       if (latestCallTimestamps.current.get(id) === callTimestamp) {
@@ -144,7 +146,7 @@ export const useSuggestionsManager = () => {
             p.id === id && p.isHighlighted
               ? {
                   ...p,
-                  autocompleteSuggestions: suggestions,
+                  autocompleteSuggestion: suggestion,
                   nextHighlightSuggestion: null,
                 }
               : p
@@ -152,7 +154,7 @@ export const useSuggestionsManager = () => {
         );
       }
     } catch (error) {
-      console.error("Error fetching autocomplete suggestions:", error);
+      console.error("Error fetching autocomplete suggestion:", error);
     }
   };
 
@@ -160,33 +162,49 @@ export const useSuggestionsManager = () => {
    * Ensures that the given passage has up-to-date suggestions.
    * If highlighted, refreshes code suggestions; if not, requests highlight suggestion.
    */
-  const updateSuggestionsForPassage = useCallback(async (id: PassageId) => {
-    if (!aiSuggestionsEnabled) return;
-    const callTimestamp = Date.now(); // Unique timestamp for this call
-    latestCallTimestamps.current.set(id, callTimestamp); // Mark as latest
-    const passage = passages.find((p) => p.id === id);
-    if (!passage) return;
+  // const updateSuggestionsForPassage = useCallback(async (id: PassageId) => {
+  //   if (!aiSuggestionsEnabled) return;
+  //   const callTimestamp = Date.now(); // Unique timestamp for this call
+  //   latestCallTimestamps.current.set(id, callTimestamp); // Mark as latest
+  //   const passage = passages.find((p) => p.id === id);
+  //   if (!passage) return;
 
-    if (passage.isHighlighted) {
-      await refreshCodeSuggestions(id, callTimestamp);
-      await refreshAutocompleteSuggestions(id, callTimestamp);
-    } else {
-      await refreshHighlightSuggestion(id, 0, callTimestamp);
-    }
-  }, [passages]);
+  //   if (passage.isHighlighted) {
+  //     await refreshCodeSuggestions(id, callTimestamp);
+  //     await refreshAutocompleteSuggestions(id, callTimestamp);
+  //   } else {
+  //     await refreshHighlightSuggestion(id, 0, callTimestamp);
+  //   }
+  // }, [passages]);
 
   /**
    * Updates the autocomplete suggestions for the given passage.
    * @param id The ID of the passage for which to update autocomplete suggestions.
+   * @param existingCodes The existing codes assigned to the passage.
+   * @param currentUserInput The current user input for which to get autocomplete suggestions.
    */
-  const updateAutocompleteSuggestionsForPassage = useCallback(async (id: PassageId) => {
+  const updateAutocompleteSuggestionForPassage = useCallback(async (id: PassageId, existingCodes: string[], currentUserInput: string) => {
     if (!aiSuggestionsEnabled) return;
     const callTimestamp = Date.now(); // Unique timestamp for this call
     latestCallTimestamps.current.set(id, callTimestamp); // Mark as latest
     const passage = passages.find((p) => p.id === id);
     if (!passage || !passage.isHighlighted) return;
 
-    await refreshAutocompleteSuggestions(id, callTimestamp);
+    await refreshAutocompleteSuggestion(id, existingCodes, currentUserInput, callTimestamp);
+  }, [passages]);
+
+  /**
+   * Updates the code suggestions for the given passage.
+   * @param id The ID of the passage for which to update code suggestions.
+   */
+  const updateCodeSuggestionsForPassage = useCallback(async (id: PassageId) => {
+    if (!aiSuggestionsEnabled) return;
+    const callTimestamp = Date.now(); // Unique timestamp for this call
+    latestCallTimestamps.current.set(id, callTimestamp); // Mark as latest
+    const passage = passages.find((p) => p.id === id);
+    if (!passage || !passage.isHighlighted) return;
+
+    await refreshCodeSuggestions(id, callTimestamp);
   }, [passages]);
 
   /**
@@ -268,8 +286,9 @@ export const useSuggestionsManager = () => {
 
   return {
     declineHighlightSuggestion,
-    updateSuggestionsForPassage,
-    updateAutocompleteSuggestionsForPassage,
+    // updateSuggestionsForPassage,
+    updateAutocompleteSuggestionForPassage,
+    updateCodeSuggestionsForPassage,
     inclusivelyFetchHighlightSuggestionAfter,
     isFetchingHighlightSuggestion,
   };

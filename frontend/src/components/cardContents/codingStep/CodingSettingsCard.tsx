@@ -98,7 +98,7 @@ const CodingSettingsCardContent = ({
                     <p>
                       The number of words that are included in the LLM prompts as
                       surrounding context when generating code suggestions for a
-                      highlighted passage. 70% of the words go before the passage, 30%
+                      highlighted passage. Approximately 70% of the words go before the passage, 30%
                       after. A value of 0 means the highlighted passage is included alone
                       with no surrounding context.
                     </p>
@@ -174,13 +174,13 @@ const CodingSettingsCardContent = ({
         <div className="flex flex-col w-full">
           <label htmlFor="codingGuidelines">Code style guidelines for the LLM:</label>
           <ul className="list-disc ml-3 pb-2 pt-0.5 text-sm">
-            <li>Automatically included in the LLM prompts.</li>
+            <li>Guidelines on the preferred style of the suggested codes.</li>
           </ul>
           <textarea
             id="codingGuidelines"
             value={codingGuidelines}
             onChange={(e) => setCodingGuidelines(e.target.value)}
-            className="flex-1 border-1 border-outline rounded-md p-1 accent-[#006851] resize-none"
+            className="flex-1 border-1 border-outline rounded-md p-1 accent-[#006851] resize-none text-sm"
           />
         </div>
         <div className="flex flex-col w-full">
@@ -188,13 +188,13 @@ const CodingSettingsCardContent = ({
             Highlight selection guidelines for the LLM:
           </label>
           <ul className="list-disc ml-3 pb-2 pt-0.5 text-sm">
-            <li>Automatically included in the LLM prompts.</li>
+            <li>Guidelines on the preferred passage selection style.</li>
           </ul>
           <textarea
             id="codingGuidelines"
             value={highlightGuidelines}
             onChange={(e) => setHighlightGuidelines(e.target.value)}
-            className="flex-1 border-1 border-outline rounded-md p-1 accent-[#006851] resize-none"
+            className="flex-1 border-1 border-outline rounded-md p-1 accent-[#006851] resize-none text-sm"
           />
         </div>
         <div className="flex gap-2 items-center justify-between w-full">
@@ -319,7 +319,7 @@ const CodingSettingsCardContent = ({
                 className="border-1 border-outline bg-background rounded-md p-1 max-w-[80px] accent-[#006851]"
               />
             </div>
-            <p className="text-sm">
+            <p className="text-sm pt-2">
               <b>NOTE:</b> After the specified windows, the content is cut intelligently (e.g. at a line break or sentence end.)
             </p>
           </div>

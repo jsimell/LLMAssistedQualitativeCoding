@@ -114,6 +114,7 @@ export const usePassageSegmenter = () => {
           isHighlighted: true,
           codeIds: [...(sourcePassage.codeIds || []), newCodeId],
           codeSuggestions: initialCodeSuggestions,
+          autocompleteSuggestion: "",
           nextHighlightSuggestion: null,
         },
       ];
@@ -130,7 +131,7 @@ export const usePassageSegmenter = () => {
           isHighlighted: true,
           codeIds: [newCodeId],
           codeSuggestions: initialCodeSuggestions,
-          autocompleteSuggestions: [],
+          autocompleteSuggestion: "",
           nextHighlightSuggestion: null,
         },
         {
@@ -140,7 +141,7 @@ export const usePassageSegmenter = () => {
           isHighlighted: false,
           codeIds: [],
           codeSuggestions: [],
-          autocompleteSuggestions: [],
+          autocompleteSuggestion: null,
           nextHighlightSuggestion: null,
         },
       ];
@@ -157,7 +158,7 @@ export const usePassageSegmenter = () => {
           isHighlighted: false,
           codeIds: [],
           codeSuggestions: [],
-          autocompleteSuggestions: [],
+          autocompleteSuggestion: null,
           nextHighlightSuggestion: null,
         },
         {
@@ -167,7 +168,7 @@ export const usePassageSegmenter = () => {
           isHighlighted: true,
           codeIds: [newCodeId],
           codeSuggestions: initialCodeSuggestions,
-          autocompleteSuggestions: [],
+          autocompleteSuggestion: "",
           nextHighlightSuggestion: null,
         },
       ];
@@ -184,7 +185,7 @@ export const usePassageSegmenter = () => {
           isHighlighted: false,
           codeIds: [],
           codeSuggestions: [],
-          autocompleteSuggestions: [],
+          autocompleteSuggestion: null,
           nextHighlightSuggestion: null,
         },
         {
@@ -194,7 +195,7 @@ export const usePassageSegmenter = () => {
           isHighlighted: true,
           codeIds: [newCodeId],
           codeSuggestions: initialCodeSuggestions,
-          autocompleteSuggestions: [],
+          autocompleteSuggestion: "",
           nextHighlightSuggestion: null,
         },
         {
@@ -204,7 +205,7 @@ export const usePassageSegmenter = () => {
           isHighlighted: false,
           codeIds: [],
           codeSuggestions: [],
-          autocompleteSuggestions: [],
+          autocompleteSuggestion: null,
           nextHighlightSuggestion: null,
         },
       ];

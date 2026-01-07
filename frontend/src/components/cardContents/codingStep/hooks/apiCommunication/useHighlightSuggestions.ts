@@ -127,7 +127,7 @@ export const useHighlightSuggestions = () => {
             startPassage,
             passages,
             searchStartIndex,
-            highlightSuggestionContextWindowSize ?? 200, // Default to 200 words if not set
+            highlightSuggestionContextWindowSize ?? 400, // Default to 400 words if not set
             dataIsCSV
           );
 

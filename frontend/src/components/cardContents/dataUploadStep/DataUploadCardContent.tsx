@@ -203,7 +203,7 @@ const DataUploadCardContent = () => {
           isHighlighted: false,
           codeIds: [],
           codeSuggestions: [],
-          autocompleteSuggestions: [],
+          autocompleteSuggestion: null,
           nextHighlightSuggestion: null,
         };
         passagesForThisColumn.push(newPassage);
@@ -227,7 +227,7 @@ const DataUploadCardContent = () => {
         isHighlighted: false,
         codeIds: [],
         codeSuggestions: [],
-        autocompleteSuggestions: [],
+        autocompleteSuggestion: null,
         nextHighlightSuggestion: null,
       },
     ]);
