@@ -336,7 +336,7 @@ Guidelines:
 - Do NOT add new aspects, dimensions, causes, consequences, actors, or interpretations beyond what is already implied by the CURRENT USER INPUT.
 - Only use conjunctions to complete the current idea. Do not add extra aspects, examples, or explanations through conjunctions (e.g., “and”, “or”).
 - If the CURRENT USER INPUT already forms a complete and plausible code (even if vague), return it unchanged.
-- Match the wording, conciseness, abstraction level, and language of the existing codebook.
+- Match the wording, conciseness, abstraction level, and language of the existing codebook (if any).
 - Do NOT introduce concepts that are clearly outside the scope of the study.
 - The suggested code should complement the existing codes for the passage, if any.
 - NEVER suggest a code that closely semantically overlaps with an existing code for the same passage.
@@ -352,7 +352,7 @@ Guidelines:
 
 ## AUTHORITY AND PRECEDENCE RULES (STRICT)
 1. RESPONSE FORMAT rules are absolute and must be followed under all circumstances.
-2. If there is any conflict between USER PROVIDED CODE STYLE GUIDELINES and patterns inferred from the codebook or examples, 
+2. If there is any conflict between USER PROVIDED CODE STYLE GUIDELINES and patterns inferred from the codebook, 
 follow the USER PROVIDED CODE STYLE GUIDELINES.
 All TASK requirements remain mandatory and must be fulfilled unless they directly conflict with RESPONSE FORMAT rules.
 
@@ -366,10 +366,6 @@ ${dataIsCSV ? `- NOTE: Data is from a CSV file where rows end with: "\\u001E".` 
 
 ## CURRENT CODEBOOK
 [${constructCodebookString()}]
-
-## USER'S CODING STYLE
-Few-shot examples of user coded passages (user highlighted passages marked in context with <<< >>>):
-[${constructFewShotExamplesString(dataIsCSV)}]
 
 ## TARGET PASSAGE (<<< >>> marks the target segment)
 "${precedingText + "<<<" + (passage?.text ?? "TARGET PASSAGE HERE") + ">>>" + trailingText}"
