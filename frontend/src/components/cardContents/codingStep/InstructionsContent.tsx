@@ -74,6 +74,9 @@ const InstructionsContent = ({
             after the declined one.
           </li>
           <li>
+            Click on an uncoded section to search for a highlight suggestion <b>starting from the beginning of that section</b>.
+          </li>
+          <li>
             You can use the arrow keys to scroll the data vertically.
           </li>
         </ul>
@@ -92,7 +95,7 @@ const InstructionsContent = ({
               <p className="font-semibold">Coding settings</p>
               <p>You can:</p>
               <ul className="list-disc list-inside flex flex-col gap-1 flex-1 min-w-0">
-                <li>Toggle AI suggestions on/off with the switch.</li>
+                <li>Toggle AI suggestions on/off.</li>
                 <li>
                   Define how much context is provided to the AI when fetching coding
                   suggestions.
@@ -126,8 +129,7 @@ const InstructionsContent = ({
                   code.
                 </li>
                 <li>
-                  All codebook codes, used and unused, are included in the coding
-                  suggestion prompts.
+                  All codebook codes, used and unused, are provided to the AI.
                 </li>
                 <li>
                   You can download the codebook as a single column CSV file at any time

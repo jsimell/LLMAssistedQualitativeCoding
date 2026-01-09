@@ -68,7 +68,6 @@ const CodingCardContent = () => {
   const [displayedColumn, setDisplayedColumn] = useState<string>(columnNames[0] || "");
 
   // Refs
-  const clickedExampleBlobRef = useRef<boolean>(false); // Track if the most recent click was on a few-shot example blob
   const isProcessingPendingRef = useRef<boolean>(false); // Used for preventing overlapping processing of the same queue head
   // Keep a stable ref to the latest fetch function to avoid effect re-trigger on identity changes
   const inclusiveFetchRef = useRef(inclusivelyFetchHighlightSuggestionAfter);
@@ -359,10 +358,6 @@ const CodingCardContent = () => {
           e.stopPropagation(); // Prevent triggering parent onMouseDown
           // If there is an ongoing highlight suggestion fetch, do nothing
           if (isProcessingPendingRef.current) return;
-          if (clickedExampleBlobRef.current) {
-            clickedExampleBlobRef.current = false;
-            return;
-          }
           if (!p.isHighlighted) {
             setActiveCodeId(null);
             setShowHighlightSuggestionFor(p.id);
@@ -417,7 +412,6 @@ const CodingCardContent = () => {
                   setActiveCodeId={setActiveCodeId}
                   setPendingHighlightFetches={setPendingHighlightFetches}
                   preventCodeBlobDeactivationRef={preventCodeBlobDeactivationRef}
-                  clickedExampleBlobRef={clickedExampleBlobRef}
                   isLastCodeOfPassage={index === p.codeIds.length - 1}
                   codeManager={codeManager}
                   suggestionsManager={suggestionsManager}

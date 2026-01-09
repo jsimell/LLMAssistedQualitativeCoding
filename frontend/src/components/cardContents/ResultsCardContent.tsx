@@ -7,7 +7,7 @@ import { getPassageWithSurroundingContext } from "./codingStep/utils/passageUtil
 
 const ResultsCardContent = () => {
   const context = useContext(WorkflowContext)!;
-  const { codes, passages, passagesPerColumn, codebook, uploadedFile } = context;
+  const { codes, passages, passagesPerColumn, codebook, uploadedFile, examplesPrecedingContextSize, examplesTrailingContextSize } = context;
   const [data, setData] = useState<{ code: string; count: number }[]>([]);
 
   useEffect(() => {
@@ -28,7 +28,7 @@ const ResultsCardContent = () => {
    * @returns The truncated label if it exceeds maxLength, otherwise the original label
    */
   const truncateLabel = (label: string) => {
-    const maxLength = 45;
+    const maxLength = 48;
     return label.length > maxLength ? label.substring(0, maxLength) + "..." : label;
   };
 
@@ -62,8 +62,8 @@ const ResultsCardContent = () => {
           getPassageWithSurroundingContext(
             p,
             passages,
-            30,
-            15,
+            examplesPrecedingContextSize ?? 30,
+            examplesTrailingContextSize ?? 15,
             uploadedFile?.type === "text/csv"
           );
 
@@ -124,7 +124,7 @@ const ResultsCardContent = () => {
   return (
     <div className="flex gap-15 items-center mt-6">
       {/* Chart container with vertical scroll if needed */}
-      <div className="flex items-center justify-center overflow-y-auto overflow-x-hidden max-h-[50vh] border border-outline rounded-sm px-4 py-2 min-h-[40vh] min-w-[40vw]">
+      <div className="flex items-start justify-center overflow-y-auto overflow-x-hidden max-h-[50vh] border border-outline rounded-sm px-4 py-2 min-h-[40vh] min-w-[40vw]">
         {codebook.size === 0 ? (
           <p>No codes have been added yet.</p>
         ) : (
@@ -147,7 +147,7 @@ const ResultsCardContent = () => {
             {/* X-axis for counts */}
             <XAxis type="number" hide={true} />
 
-            <Tooltip />
+            <Tooltip/>
 
             {/* Bars */}
             <Bar dataKey="count" fill="#4F6074" barSize={20}>
@@ -163,7 +163,7 @@ const ResultsCardContent = () => {
       <div className="flex flex-col gap-16 items-center">
         <div className="flex flex-col gap-4 items-center max-w-[400px]">
           <p className="text-center">
-            Download coded passages, their context, and their codes as a CSV file:
+            Download coded passages, their context, and their codes as a CSV file. Uses the same preceding and trailing context sizes as the few-shot examples.
           </p>
           <Button
             onClick={handleFileDownload}
@@ -173,7 +173,7 @@ const ResultsCardContent = () => {
             title={"Download coded passages as a CSV file"}
           />
           <p className="text-sm text-center pt-1.5">
-            <b>NOTE:</b> If you uploaded a CSV file, the download will include separate
+            <b>NOTE:</b> If you uploaded a multi column CSV file, the download will include separate
             files for each column that you added some codes to.
           </p>
         </div>
