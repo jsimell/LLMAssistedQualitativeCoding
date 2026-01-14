@@ -242,10 +242,10 @@ Guidelines:
 - Treat this as autocomplete, not analysis or full coding.
 - Assume the user has already chosen the intended conceptual direction; your task is only to minimally complete it.
 - Ensure the code accurately reflects the meaning of the target passage.
-- If the CURRENT USER INPUT contains only a vague fragment (e.g., “lack of”, “confusion about”), complete it into a meaningful code that fits the passage and complements existing codes.
+- If the CURRENT USER INPUT is semantically incomplete (e.g., “lack of”, “confusion about”), minimally complete it by introducing the most likely single aspect that fits the passage and complements existing codes.
+- If the CURRENT USER INPUT already expresses a specific meaning, do NOT extend it by adding additional aspects, dimensions, causes, or interpretations (e.g., via conjunctions).
+- Only use conjunctions if necessary to complete the current idea. Do not add extra aspects, examples, or explanations through conjunctions (e.g., “and”, “or”).
 - Prefer the shortest valid completion that forms an accurate full code in the user's style.
-- Do NOT add new aspects, dimensions, causes, consequences, actors, or interpretations beyond what is already implied by the CURRENT USER INPUT.
-- Only use conjunctions to complete the current idea. Do not add extra aspects, examples, or explanations through conjunctions (e.g., “and”, “or”).
 - If the CURRENT USER INPUT already forms a complete and plausible code (even if vague), return it unchanged.
 - Match the wording, conciseness, abstraction level, and language of the existing codebook (if any).
 - Do NOT introduce concepts that are clearly outside the scope of the study.
