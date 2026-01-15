@@ -55,7 +55,6 @@ export const useCodeSuggestions = () => {
       const systemPrompt = generateCodeSuggestionsPrompt(
         dataIsCSV,
         precedingContext,
-        trailingContext,
         passage
       );
 
@@ -96,9 +95,11 @@ export const useCodeSuggestions = () => {
     ]
   );
 
-  /** Gets a comprehensive list of autocomplete suggestions for a specific passage.
-   * @param passageId - ID of the passage for which to get suggestions
-   * @returns array of suggestions as strings
+  /** Gets an autocomplete suggestion based on the current user input and passage context.
+   * @param passage The passage being coded
+   * @param existingCodes The codes already assigned to the passage
+   * @param currentUserInput The current user input for the code being typed
+   * @returns The suggested autocomplete code as a string
    */
   const getAutocompleteSuggestion = useCallback(
     async (passage: Passage, existingCodes: string[], currentUserInput: string): Promise<string> => {
@@ -115,7 +116,6 @@ export const useCodeSuggestions = () => {
         dataIsCSV,
         currentUserInput,
         precedingContext,
-        trailingContext,
         passage,
         existingCodes
       );

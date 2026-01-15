@@ -302,7 +302,6 @@ Few-shot examples of user coded passages (user highlighted passages marked in co
    * @param dataIsCSV Boolean flag indicating whether the uploaded data is in CSV format
    * @param currentUserInput The current user input to be completed
    * @param precedingText Preceding text of the passage to be coded
-   * @param trailingText Trailing text of the passage to be coded
    * @param passage The passage to generate autocomplete suggestions for
    * @param existingCodes The existing codes for the passage
    * @returns The autocomplete suggestions prompt string
@@ -312,7 +311,6 @@ Few-shot examples of user coded passages (user highlighted passages marked in co
       dataIsCSV: boolean,
       currentUserInput: string,
       precedingText: string,
-      trailingText: string,
       passage?: Passage,
       existingCodes?: string[],
     ) => {
@@ -332,6 +330,7 @@ Guidelines:
 - Treat this as autocomplete, not analysis or full coding.
 - Assume the user has already chosen the intended conceptual direction; your task is only to minimally complete it.
 - Ensure the code accurately reflects the meaning of the target passage.
+- Code ONLY the target passage, and NEVER describe any aspect of the preceding context.
 - If the CURRENT USER INPUT is semantically incomplete (e.g., “lack of”, “confusion about”), minimally complete it by introducing the most likely single aspect that fits the passage and complements existing codes.
 - If the CURRENT USER INPUT already expresses a specific meaning, do NOT extend it by adding additional aspects, dimensions, causes, or interpretations (e.g., via conjunctions).
 - Only use conjunctions if necessary to complete the current idea. Do not add extra aspects, examples, or explanations through conjunctions (e.g., “and”, “or”).
@@ -368,8 +367,11 @@ ${dataIsCSV ? `- NOTE: Data is from a CSV file where rows end with: "\\u001E".` 
 ## CURRENT CODEBOOK
 [${constructCodebookString()}]
 
-## TARGET PASSAGE (<<< >>> marks the target segment)
-"${precedingText + "<<<" + (passage?.text ?? "TARGET PASSAGE HERE") + ">>>" + trailingText}"
+## PRECEDING CONTEXT (for context only; your suggestion must not describe concepts from this context):
+"${precedingText}"
+
+## TARGET PASSAGE (passage to code)
+"${passage ? passage.text : "<target passage will be inserted here>"}"
 
 ## TARGET PASSAGE EXISTING CODES
 ${
@@ -391,7 +393,6 @@ ${
    * Generates the code suggestions prompt based on the uploaded data format. Uses the current context for dynamic generation.
    * @param dataIsCSV Boolean flag indicating whether the uploaded data is in CSV format
    * @param precedingText Preceding text of the passage to be coded
-   * @param trailingText Trailing text of the passage to be coded
    * @param passage The passage to generate code suggestions for
    * @returns The code suggestions prompt string
    */
@@ -399,7 +400,6 @@ ${
     (
       dataIsCSV: boolean,
       precedingText: string,
-      trailingText: string,
       passage?: Passage
     ) => {
       const existingCodes = passage
@@ -440,16 +440,15 @@ Case 2 - If the passage has existing codes:
   - Suggest additional complementary codes that add new insights. Do not repeat or closely match existing codes. Total codes (existing + new) must be max 5.
 
   In both cases:
-  - List the codes in order of relevance to the target passage, most relevant first.
-  - Only code the target passage marked with <<< >>>; do NOT code the surrounding context.
-  - If any suggested code depends on information from the preceding or trailing context, remove it.
-  - Only suggest codes that meaningfully contribute to the research.
-  - Create new codes if needed, ensuring they match the user's coding style.   
-  - Reuse codebook codes if possible, but only if they accurately reflect the passage's meaning.
-  - Cover ALL relevant aspects, but avoid overcoding.
-  - Complete clearly unfinished existing codes (e.g. "lack of" => "lack of transparency" or "confus" => "confusing button placement"), if doing so yields a meaningful code. 
+  - The coding style must obey the USER PROVIDED GUIDELINES above (if provided).
+  - These codes should capture all important aspects of the passage in relation to the research questions.
+  - Prioritize code accuracy over reusing codebook codes. Create new codes if needed, ensuring they match the user's coding style.
+  - List codes strictly in order of relevance, with the first listed code being the most relevant. The origins of the codes (codebook vs. newly created) should not affect the order.
+  - Avoid overcoding, but ensure all important aspects are covered.
   - Return [] if no relevant codes can be identified.
   - Do NOT include any of the passage's existing codes in your suggestions.
+  - Ignore clearly unfinished existing codes (e.g. "lack of" or "confus" ).
+  - Only code the target passage; codes must NEVER describe the preceding context.
 
 ## AUTHORITY AND PRECEDENCE RULES (STRICT)
 1. RESPONSE FORMAT rules are absolute and must be followed under all circumstances.
@@ -468,13 +467,11 @@ User coded passages (coded passages marked in context with <<< >>>):
 ## CURRENT CODEBOOK
 [${constructCodebookString()}]
 
-## TARGET PASSAGE AND SURROUNDING CONTEXT (Code only the target passage!)
-**Preceding context (non-codable; must not introduce concepts into codes)**:
+## PRECEDING CONTEXT (for context only; codes must not introduce concepts from this context):
 "${precedingText}"
-**Target passage (code this passage only)**:
-${passage?.text ?? "TARGET PASSAGE HERE"}
-**Trailing context (non-codable; must not introduce concepts into codes)**:
-"${trailingText}"
+
+## TARGET PASSAGE (passage to code)
+"${passage ? passage.text : "<target passage will be inserted here>"}"
 
 ## TARGET PASSAGE EXISTING CODES
 ${

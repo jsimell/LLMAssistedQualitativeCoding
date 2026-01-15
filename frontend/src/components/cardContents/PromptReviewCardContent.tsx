@@ -26,15 +26,13 @@ const PromptReviewCardContent = () => {
   );
   const codePrompt = generateCodeSuggestionsPrompt(
     context.uploadedFile?.type === "text/csv",
-    "<the target passage will be inserted here>",
-    "<target passage with context will be inserted here>",
+    "<preceding text will be inserted here>",
     undefined
   );
   const autocompletePrompt = generateAutocompleteSuggestionPrompt(
     context.uploadedFile?.type === "text/csv",
     "<the current user input will be inserted here>",
-    "PRECEDING TEXT HERE",
-    "TRAILING TEXT HERE",
+    "<preceding text will be inserted here>",
     undefined,
     undefined
   );
