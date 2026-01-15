@@ -1,5 +1,6 @@
 import { useContext } from "react";
 import {
+  CodeId,
   Passage,
   WorkflowContext,
 } from "../../../../../context/WorkflowContext";
@@ -77,7 +78,7 @@ export const usePrompts = () => {
     } else {
       // Random selection mode
       const randomPassages = passages
-        .filter((p) => p.codeIds.length > 0)
+        .filter((p) => p.isHighlighted && p.codeIds.length > 0 && codes.filter((c) => p.codeIds.includes(c.id)).some((c) => c.code && c.code.trim().length > 0))
         .sort(() => 0.5 - Math.random())
         .slice(0, randomFewShotExamplesCount)
         .map((p) => {
@@ -439,10 +440,14 @@ Case 2 - If the passage has existing codes:
   - Suggest additional complementary codes that add new insights. Do not repeat or closely match existing codes. Total codes (existing + new) must be max 5.
 
   In both cases:
-  - Complete clearly unfinished existing codes (e.g. "lack of" or "confus"), if doing so yields a meaningful code.
+  - List the codes in order of relevance to the target passage, most relevant first.
+  - Only code the target passage marked with <<< >>>; do NOT code the surrounding context.
+  - If any suggested code depends on information from the preceding or trailing context, remove it.
   - Only suggest codes that meaningfully contribute to the research.
-  - Reuse codebook codes if possible. Only create new codes if needed, ensuring they match the user's coding style. 
-  - Cover ALL relevant aspects, but avoid overcoding. 
+  - Create new codes if needed, ensuring they match the user's coding style.   
+  - Reuse codebook codes if possible, but only if they accurately reflect the passage's meaning.
+  - Cover ALL relevant aspects, but avoid overcoding.
+  - Complete clearly unfinished existing codes (e.g. "lack of" => "lack of transparency" or "confus" => "confusing button placement"), if doing so yields a meaningful code. 
   - Return [] if no relevant codes can be identified.
   - Do NOT include any of the passage's existing codes in your suggestions.
 
@@ -463,8 +468,13 @@ User coded passages (coded passages marked in context with <<< >>>):
 ## CURRENT CODEBOOK
 [${constructCodebookString()}]
 
-## TARGET PASSAGE (<<< >>> marks the coded segment)
-"${precedingText + "<<<" + (passage?.text ?? "TARGET PASSAGE HERE") + ">>>" + trailingText}"
+## TARGET PASSAGE AND SURROUNDING CONTEXT (Code only the target passage!)
+**Preceding context (non-codable; must not introduce concepts into codes)**:
+"${precedingText}"
+**Target passage (code this passage only)**:
+${passage?.text ?? "TARGET PASSAGE HERE"}
+**Trailing context (non-codable; must not introduce concepts into codes)**:
+"${trailingText}"
 
 ## TARGET PASSAGE EXISTING CODES
 ${
