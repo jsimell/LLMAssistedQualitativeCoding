@@ -327,6 +327,7 @@ Given the CURRENT USER INPUT and the user's established coding style, minimally 
 Use the target passage and existing codes to ensure compatibility and non-overlap.
 
 Guidelines:
+- Obey USER PROVIDED CODE STYLE GUIDELINES (if provided).
 - Treat this as autocomplete, not analysis or full coding.
 - Assume the user has already chosen the intended conceptual direction; your task is only to minimally complete it.
 - Ensure the code accurately reflects the meaning of the target passage.
@@ -440,7 +441,7 @@ Case 2 - If the passage has existing codes:
   - Suggest additional complementary codes that add new insights. Do not repeat or closely match existing codes. Total codes (existing + new) must be max 5.
 
   In both cases:
-  - The coding style must obey the USER PROVIDED GUIDELINES above (if provided).
+  - Obey the USER PROVIDED GUIDELINES above (if provided).
   - These codes should capture all important aspects of the passage in relation to the research questions.
   - Prioritize code accuracy over reusing codebook codes. Create new codes if needed, ensuring they match the user's coding style.
   - List codes strictly in order of relevance, with the first listed code being the most relevant. The origins of the codes (codebook vs. newly created) should not affect the order.
